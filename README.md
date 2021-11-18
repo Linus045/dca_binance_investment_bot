@@ -55,7 +55,9 @@ e.g. bot.log -> bot.log.2021.11.18
             "LOGGING" : {
                 "LOG_LEVEL" : "DEBUG", // or CRITICAL, ERROR, WARNING, INFO, DEBUG
                 "LOG_FILE" : "bot.log"
-            }
+            },
+            "USE_TESTNET" : true,    // wether to use the testnet or the mainnet
+            "check_interval" : 1800  // interval in seconds to check if a new investment is needed (default: 30min)
         }
 
 

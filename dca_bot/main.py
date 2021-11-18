@@ -30,7 +30,6 @@ def load_last_orders(filepath : str):
         return []
 
 unfullfilled_orders = []
-update_interval = 60 * 30  # 30 minutes
 # set precision for Decimal to 8 since most numbers in binance use max 8 digits
 getcontext().prec = 8
 
@@ -197,6 +196,23 @@ def main():
         LOG_ERROR(debug_tag, 'No USE_TESTNET option found in config file')
         raise Exception('No USE_TESTNET option found in config file')
 
+    check_interval = 60 * 30 # 30 minutes
+    # retrieve update interval or use default
+    if 'check_interval' in config:
+        try:
+            check_interval = int(config['check_interval'])
+        except ValueError:
+            LOG_ERROR(debug_tag, 'Check interval in config file is not a number')
+            raise Exception('Check interval in config file is not a number')
+        
+        # check_interval must be at least 30 seconds
+        if check_interval < 30:
+            LOG_ERROR(debug_tag, 'Check interval in config file is too small. (>=30 seconds)')
+            raise Exception('Check interval in config file is too small. (>=30 seconds)')
+        LOG_DEBUG(debug_tag, 'Check interval set to {} seconds ({})'.format(check_interval, str(datetime.timedelta(seconds=check_interval))))
+    else:
+        LOG_INFO(debug_tag, 'No check_interval option found in config file. Using default of 30 minutes')
+
     bot = TradingBot(use_testnet=USE_TESTNET)
     bot.connect()
 
@@ -352,7 +368,7 @@ def main():
                         bot.print_orders(fullfilled_orders)
                     else:
                         LOG_INFO('Investment starts at {}'.format(investment_start.strftime('%d.%m.%Y %H:%M:%S')))
-                time.sleep(update_interval)
+                time.sleep(check_interval)
             except KillProcessException as e:
                 LOG_INFO(debug_tag, 'Process killed from outside')
                 running = False
