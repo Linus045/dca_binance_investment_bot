@@ -14,6 +14,8 @@ timesync contains the code for the time synchronization (Currently not integrate
         BINANCE_KEY=<Binace Api key here>
         BINANCE_SECRET=<Binance Api Secret here>
 
+Get Binance Testnet API keys from: https://testnet.binance.vision/ 
+
 2. (dca_investment_parameter.json) Define the symbols you want to invest in
 
         [
