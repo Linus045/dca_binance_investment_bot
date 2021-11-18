@@ -168,7 +168,11 @@ def load_config(config_filepath : str):
 
 def main():
     global unfullfilled_orders
-    order_filepath = os.path.join('orders', 'orders.json')
+    order_dirpath = 'orders'
+    order_filepath = os.path.join(order_dirpath, 'orders.json')
+    if not os.path.exists(order_dirpath):
+        os.makedirs(order_dirpath)
+
     debug_tag = '[Startup]'
     dca_file_name = 'dca_investment_parameter.json'
     dca_file_path = os.path.join('configs', dca_file_name)
