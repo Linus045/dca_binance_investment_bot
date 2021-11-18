@@ -1,0 +1,27 @@
+[
+  {
+    // symbol to invest in
+    "symbol": "BTCUSDT",                
+    
+    // amount of quote asset to invest every time
+    "investment_amount_quoteasset": 12, 
+    
+    // time interval (how often to invest): see DCAInvestmentParameter::parse_interval_to_seconds for valid intervals
+    "interval": "1d",                   
+    
+    // time of day to invest, the bot will create the order at the specified time
+    "investment_time": "02:00",
+
+    // the start day of the investment, the bot won't start before this date
+    "start_date": "2021-11-19"
+  },
+
+  // example:
+  {
+    "symbol": "ETHUSDT",
+    "investment_amount_quoteasset": 12,
+    "interval": "1w",
+    "investment_time": "12:00",
+    "start_date": "2021-11-01"
+  }
+]
