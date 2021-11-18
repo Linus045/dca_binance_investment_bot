@@ -3,5 +3,6 @@
         "LOG_LEVEL" : "DEBUG",
         "LOG_FILE" : "bot.log"
     },
-    "USE_TESTNET" : true
+    "USE_TESTNET" : true,
+    "check_interval" : 1800
 }
