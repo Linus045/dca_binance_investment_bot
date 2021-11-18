@@ -218,10 +218,6 @@ def main():
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
-    # cancel all orders for BTCUSTD and ETHUSDT
-    bot.cancel_all_orders_for_symbol('BTCUSDT')
-    bot.cancel_all_orders_for_symbol('ETHUSDT')
 
     dca_investment_strategies = []
     if os.path.isfile(dca_file_path):
