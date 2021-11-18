@@ -18,7 +18,7 @@ import global_vars
 from trading_bot import TradingBot
 from dca_investment_parameter import *
 from binance_order import BinanceOrder
-from logger import LOG_INFO, LOG_ERROR, LOG_DEBUG, LOG_WARNING, LOG_CRITICAL
+from logger import init_logger, LOG_INFO, LOG_ERROR, LOG_DEBUG, LOG_WARNING, LOG_CRITICAL
 
 def load_last_orders(filepath : str):
     if os.path.isfile(filepath):
@@ -159,14 +159,42 @@ class KillProcessException(Exception):
 def signal_handler(signal, frame):
     raise KillProcessException('Process killed by signal {}'.format(signal))
 
+def load_config(config_filepath : str):
+    if os.path.exists(config_filepath):
+        with open(config_filepath, 'r') as config_file:
+            return json.load(config_file)
+    else:
+        raise Exception('Config file {} does not exist'.format(config_filepath))
+
 def main():
     global unfullfilled_orders
-    order_filepath = os.path.join('orders', 'orders.json')    
-    bot = TradingBot()
-    bot.connect()
+    order_filepath = os.path.join('orders', 'orders.json')
     debug_tag = '[Startup]'
     dca_file_name = 'dca_investment_parameter.json'
     dca_file_path = os.path.join('configs', dca_file_name)
+
+    # load config file
+    config_file = os.path.join('configs', 'config.json')
+    config = load_config(config_file)
+
+    # init logger
+    if 'LOGGING' in config:
+        log_options = config['LOGGING']
+        init_logger(log_options)
+    else:
+        LOG_ERROR(debug_tag, 'No logging options found in config file')
+        raise Exception('No logging options found in config file')
+
+    USE_TESTNET = True
+    # init trading bot  
+    if 'USE_TESTNET' in config:
+        USE_TESTNET = config['USE_TESTNET']
+    else:
+        LOG_ERROR(debug_tag, 'No USE_TESTNET option found in config file')
+        raise Exception('No USE_TESTNET option found in config file')
+
+    bot = TradingBot(use_testnet=USE_TESTNET)
+    bot.connect()
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
