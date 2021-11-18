@@ -3,39 +3,40 @@ import logging as log
 from logging.handlers import TimedRotatingFileHandler
 import json
 
-# loads local configuration
-config_filepath = os.path.join('configs', 'config.json')
-config = None
-with open(config_filepath) as config_file:
-    config = json.load(config_file)
+logger = None
+def init_logger(config : dict):
+    global logger
+    # loads local configuration
+    # Get logging variables
+    log_file = str.strip(config['LOG_FILE'])
+    log_level = config['LOG_LEVEL']
 
-# Get logging variables
-log_file = config['LOGGING']['LOG_FILE']
-log_level = config['LOGGING']['LOG_LEVEL']
+    if len(log_file) == 0:
+        print('[LOGGER]','Log file not set, using default')
+        log_file = 'bot.log'
 
-# Set default log settings
-cwd = os.getcwd()
-log_dir = "logs"
-log_file = 'bot.log'
-log_path = os.path.join(cwd, log_dir, log_file)
+    # Set default log settings
+    cwd = os.getcwd()
+    log_dir = "logs"
+    log_path = os.path.join(cwd, log_dir, log_file)
 
-# create logging directory
-if not os.path.exists(log_dir):
-    os.mkdir(log_dir)
+    # create logging directory
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
 
-file_handler = TimedRotatingFileHandler(log_path, when="midnight")
-log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
-                handlers=[file_handler, log.StreamHandler()])
-logger = log.getLogger(__name__)
+    file_handler = TimedRotatingFileHandler(log_path, when="midnight")
+    log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
+                    handlers=[file_handler, log.StreamHandler()])
+    logger = log.getLogger(__name__)
 
-# make sure log_level is valid ( DEBUG, INFO, WARNING, ERROR, CRITICAL)
-if log_level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-    logger.log(log.ERROR, "Invalid log level specified. Defaulting to INFO")
-    print('ERROR: Invalid log level: {}'.format(log_level), "Defaulting to INFO")
-    log_level = log.getLevelName('INFO')
+    # make sure log_level is valid ( DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    if log_level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+        logger.log(log.ERROR, "Invalid log level specified. Defaulting to INFO")
+        print('ERROR: Invalid log level: {}'.format(log_level), "Defaulting to INFO")
+        log_level = log.getLevelName('INFO')
 
-level = log.getLevelName(log_level)
-logger.setLevel(level)
+    level = log.getLevelName(log_level)
+    logger.setLevel(level)
 
 def __concat_args(*args):
     # concate all args to one string

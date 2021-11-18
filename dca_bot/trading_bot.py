@@ -71,10 +71,10 @@ from order_pair_manager import OrderPairManager
 
 
 class TradingBot:
-
-    def __init__(self):
-        self.debug_tag = "TradingBot"
+    def __init__(self, use_testnet=True):
+        self.debug_tag = "[TradingBot]"
         self.connected = False
+        self.use_testnet = use_testnet
 
         # load environment variables
         dotEnvPath = os.path.join('configs', '.env')
@@ -97,10 +97,15 @@ class TradingBot:
         if key == None or secret == None:
             raise Exception('Binance key or secret is not set')
 
+        if self.use_testnet:
+            LOG_INFO(self.debug_tag, 'Using testnet to connect to binance')
+        else:
+            LOG_INFO(self.debug_tag, '!!!Using MAINNET!!!')
+
         self.connected = False
         while not self.connected:
             try: 
-                self.client = Client(key, secret, testnet=True)
+                self.client = Client(key, secret, testnet=self.use_testnet)
                 self.connected = True
 
                 # self.threadedWebsocketManager = ThreadedWebsocketManager(api_key=key, api_secret=secret, testnet=True)
