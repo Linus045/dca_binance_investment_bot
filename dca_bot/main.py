@@ -135,7 +135,7 @@ def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmen
     except BinanceAPIException as e:
         LOG_ERROR(debug_tag, 'Failed to create investment order:', e)
 
-def log_and_raise_exeption(e : Exception, debug_tag : str = '[Exception]'):
+def log_and_raise_exeption(e : Exception, debug_tag : str = '[Exception]', raise_exception : bool = True):
     # try logging but if that doesnt work, try printing the exception
     exception = e
     excepton_info = traceback.format_exc()
@@ -150,7 +150,8 @@ def log_and_raise_exeption(e : Exception, debug_tag : str = '[Exception]'):
         print(debug_tag, "Another exception was raised during logging of the first exception:")
         print(debug_tag, ex)
         print(debug_tag, traceback.format_exc())
-    raise exception
+    if raise_exception:
+        raise exception
 
 class KillProcessException(Exception):
     pass
@@ -378,6 +379,11 @@ def main():
             except requests.exceptions.ConnectionError as e:
                 LOG_WARNING(debug_tag, "No Internet connection... retrying...")
                 time.sleep(15)
+            except Exception as e:
+                log_and_raise_exeption(e, raise_exception=False)
+                LOG_ERROR(debug_tag, "Error while checking if DCA investment is neccessary. Aborting program")
+                running = False
+                break
     finally:
             try:
                 # store fullfilled orders in file
@@ -396,6 +402,7 @@ def main():
                 canceled = False
                 while not canceled:
                     try:
+                        # TODO: Store to file and load on next start
                         LOG_INFO('Canceling all unfullfilled orders')
                         for order in unfullfilled_orders:
                             try:
