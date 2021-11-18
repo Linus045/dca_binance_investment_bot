@@ -1,0 +1,6 @@
+{
+    "LOGGING" : {
+        "LOG_LEVEL" : "DEBUG",
+        "LOG_FILE" : "bot.log"
+    }
+}
