@@ -4,7 +4,6 @@ import datetime
 import requests
 from decimal import Decimal
 from threading import Thread, Event
-from dotenv import load_dotenv
 
 from binance import Client
 from binance.enums import *
@@ -75,13 +74,6 @@ class TradingBot:
         self.debug_tag = "[TradingBot]"
         self.connected = False
         self.use_testnet = use_testnet
-
-        # load environment variables
-        dotEnvPath = os.path.join('configs', '.env')
-        if os.path.exists(dotEnvPath):
-            load_dotenv(dotEnvPath)
-        else:
-            LOG_WARNING(self.debug_tag, "No .env file found at {}", dotEnvPath)
 
         self.symbol_info_dict = {}
         self.sockets = []
@@ -193,7 +185,7 @@ class TradingBot:
     #         quantity=quantity,
     #         price=price))
 
-    def create_limit_buy_order(self, symbol, limit, quantity):
+    def create_limit_buy_order(self, symbol, limit, quantity) -> BinanceOrder:
         self.check_connected()
         return  BinanceOrder(self.client.create_order(
             symbol=symbol,

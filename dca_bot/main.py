@@ -14,7 +14,11 @@ from binance.enums import *
 from binance.enums import ORDER_TYPE_LIMIT
 from binance.exceptions import BinanceAPIException
 
+from firebase.firebase_storage import FirebaseStorage
+from firebase.firebase_messager import FirebaseMessager
+
 import global_vars
+from dotenv import load_dotenv
 from trading_bot import TradingBot
 from dca_investment_parameter import *
 from binance_order import BinanceOrder
@@ -32,6 +36,7 @@ def load_last_orders(filepath : str):
 unfullfilled_orders = []
 # set precision for Decimal to 8 since most numbers in binance use max 8 digits
 getcontext().prec = 8
+
 
 def check_order_possible(bot : TradingBot, amount : Decimal, price : Decimal, symbol : str):
     symbol_info = bot.get_symbol_info(symbol)
@@ -106,6 +111,7 @@ def check_order_possible(bot : TradingBot, amount : Decimal, price : Decimal, sy
     
     return True
     
+
 def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmentParameter):
     price = bot.get_avg_price(investment_strategy.symbol)
     
@@ -132,8 +138,25 @@ def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmen
             new_order = bot.create_limit_buy_order(investment_strategy.symbol, price, amount)
             unfullfilled_orders.append(new_order)
             LOG_INFO('New Investment order created:', new_order)
+
+            # TODO: Move this to a separate function (event handler)
+            message_body = 'New Investment order created:\n' + \
+                            'Symbol: {}\n'.format(investment_strategy.symbol) + \
+                            'Amount: {}\n'.format(amount) + \
+                            'Price: {}\n'.format(price) + \
+                            'Order ID: {}\n'.format(new_order.orderId) + \
+                            'Order Status: {}\n'.format(new_order.status) +\
+                            'Money spend: {}\n'.format( Decimal(new_order.price) * Decimal(new_order.origQty))
+            global_vars.firebaseMessager.push_notification(title="New order created", body=message_body)
     except BinanceAPIException as e:
         LOG_ERROR(debug_tag, 'Failed to create investment order:', e)
+        # TODO: Move this to a separate function (event handler)
+        message_body = 'Failed to create investment order:\n' + \
+                        'Symbol: {}\n'.format(investment_strategy.symbol) + \
+                        'Amount: {}\n'.format(amount) + \
+                        'Price: {}\n'.format(price) + \
+                        'Error: {}\n'.format(e)
+        global_vars.firebaseMessager.push_notification(title="Failed to create investment order", body=message_body)
 
 def log_and_raise_exeption(e : Exception, debug_tag : str = '[Exception]', raise_exception : bool = True):
     # try logging but if that doesnt work, try printing the exception
@@ -186,8 +209,40 @@ def main():
         log_options = config['LOGGING']
         init_logger(log_options)
     else:
-        LOG_ERROR(debug_tag, 'No logging options found in config file')
+        print(debug_tag, 'No logging options found in config file')
         raise Exception('No logging options found in config file')
+
+    # load environment variables
+    dotEnvPath = os.path.join('configs', '.env')
+    if os.path.exists(dotEnvPath):
+        load_dotenv(dotEnvPath)
+    else:
+        LOG_WARNING(debug_tag, "No .env file found at {}", dotEnvPath)
+
+    ids = []
+    if 'firebase_project_id' in config:
+        firebase_project_id = config['firebase_project_id']
+        firebaseStorage = FirebaseStorage(firebase_project_id)
+        firebaseStorage.connect()
+
+        # retrieve user ids from firebase
+        if 'bot_notification_id' in config:
+            bot_notification_id = config['bot_notification_id']
+            
+            LOG_INFO(debug_tag, 'Retrieving all users to notify from firebase')
+            ids = firebaseStorage.get_all_ids(bot_notification_id)
+            if len(ids) == 0:
+                LOG_WARNING(debug_tag, 'No users found to notify')
+            else:
+                LOG_INFO(debug_tag, '{} users found to notify'.format(len(ids)))
+        else:
+            LOG_INFO(debug_tag, 'No firebase bot_notification_id found in config file')
+    else:
+        LOG_INFO(debug_tag, 'No firebase project id found in config file')
+
+    global_vars.firebaseMessager = FirebaseMessager()
+    global_vars.firebaseMessager.set_ids(ids)
+    global_vars.firebaseMessager.push_notification(title="DCA Bot starting", body="Bot shut down at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
 
     USE_TESTNET = True
     # init trading bot  
@@ -242,6 +297,17 @@ def main():
                 return True
         return False
 
+    def on_order_filled(order : BinanceOrder):
+        message_body = 'Order filled: {}\n'.format(order.orderId) + \
+                          'Symbol: {}\n'.format(order.symbol) + \
+                            'Side: {}\n'.format(order.side) + \
+                            'Price: {}\n'.format(order.price) + \
+                            'Quantity: {}\n'.format(order.origQty) + \
+                            'Type: {}\n'.format(order.type) + \
+                            'Status: {}\n'.format(order.status) + \
+                            'Money spend: {}\n'.format(Decimal(order.price) * Decimal(order.origQty))
+        global_vars.firebaseMessager.push_notification(title="Order filled!", body=message_body)
+
     # TODO: outsource this function
     def THREAD_check_if_orders_are_fully_filled():
         debug_tag = '[Thread - Fullfilled Order Checker]'
@@ -266,6 +332,7 @@ def main():
                         unfullfilled_orders.remove(order)
                         fullfilled_orders.append(binance_order)
                         LOG_INFO(debug_tag, 'Order fully filled:', binance_order)
+                        on_order_filled(binance_order)
                         # store fullfilled orders in file
                         with open(order_filepath, 'w') as f:
                             orders = [o.asDict() for o in fullfilled_orders]
@@ -420,6 +487,7 @@ def main():
                         time.sleep(15)
 
                 LOG_INFO("Process exited")
+                global_vars.firebaseMessager.push_notification(title="Bot shut down", body="Bot shut down at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
             except KillProcessException:
                 LOG_CRITICAL(debug_tag, "Process killed from outside again... just wait a god damn moment!")
             except Exception as e:

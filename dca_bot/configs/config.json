@@ -4,5 +4,7 @@
         "LOG_FILE" : "bot.log"
     },
     "USE_TESTNET" : true,
-    "check_interval" : 1800
+    "check_interval" : 1800,
+    "bot_notification_id": "your_custom_id",
+    "firebase_project_id" : "investment-bot-notifier"
 }

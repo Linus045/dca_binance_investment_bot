@@ -2,10 +2,12 @@ import os
 import logging as log
 from logging.handlers import TimedRotatingFileHandler
 import json
+import global_vars
 
 logger = None
+
 def init_logger(config : dict):
-    global logger
+    global logger, notify_users
     # loads local configuration
     # Get logging variables
     log_file = str.strip(config['LOG_FILE'])
@@ -50,13 +52,22 @@ def LOG_INFO(*args):
 
 def LOG_ERROR(*args):
     logger.error(__concat_args(*args))
+    if global_vars.notify_users:
+        if global_vars.firebaseMessager is not None:
+            global_vars.firebaseMessager.push_notification('Error!', __concat_args(*args))
 
 def LOG_WARNING(*args):
     logger.warning(__concat_args(*args))
+    if global_vars.notify_users:
+        if global_vars.firebaseMessager is not None:
+            global_vars.firebaseMessager.push_notification('Warning!', __concat_args(*args))
 
 def LOG_DEBUG(*args):
     logger.debug(__concat_args(*args))
 
 def LOG_CRITICAL(*args):
     logger.critical(__concat_args(*args))
+    if global_vars.notify_users:
+        if global_vars.firebaseMessager is not None:
+            global_vars.firebaseMessager.push_notification('Warning!', __concat_args(*args))
 
