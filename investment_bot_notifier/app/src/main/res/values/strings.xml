@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Investment Bot Notifier</string>
+    <string name="default_notification_channel_id">My_Channel_ID</string>
+    <string name="msg_token_fmt">My new Token:</string>
+    <string name="default_notification_channel_name">My Channel Name:</string>
+</resources>
