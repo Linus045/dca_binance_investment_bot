@@ -236,7 +236,7 @@ def main():
 
     global_vars.firebaseMessager = FirebaseMessager()
     global_vars.firebaseMessager.set_ids(ids)
-    global_vars.firebaseMessager.push_notification(title="DCA Bot starting", body="Bot shut down at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
+    global_vars.firebaseMessager.push_notification(title="DCA Bot starting", body="Bot started at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
 
     USE_TESTNET = True
     # init trading bot  
