@@ -1,5 +1,4 @@
 import os
-from time import sleep
 
 from dotenv import load_dotenv
 from pyfcm import FCMNotification

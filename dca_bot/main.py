@@ -1,4 +1,3 @@
-from logging import debug
 import requests
 import time
 import os
