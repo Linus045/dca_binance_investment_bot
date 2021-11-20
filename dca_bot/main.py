@@ -141,6 +141,8 @@ def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmen
 
             # TODO: Move this to a separate function (event handler)
             message_body = 'New Investment order created:\n' +  new_order.to_info_string()
+            
+            LOG_DEBUG(debug_tag, 'Sending push notification for created order:', new_order.to_info_string())
             global_vars.firebaseMessager.push_notification(title="New order created", body=message_body)
     except BinanceAPIException as e:
         LOG_ERROR_AND_NOTIFY(debug_tag, 'Failed to create investment order:', e)
@@ -150,6 +152,7 @@ def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmen
                         'Amount: {}\n'.format(amount) + \
                         'Price: {}\n'.format(price) + \
                         'Error: {}\n'.format(e)
+        LOG_DEBUG(debug_tag, 'Sending push notification failed order:', message_body)
         global_vars.firebaseMessager.push_notification(title="Failed to create investment order", body=message_body)
 
 def log_and_raise_exeption(e : Exception, debug_tag : str = '[Exception]', raise_exception : bool = True):
@@ -236,6 +239,8 @@ def main():
 
     global_vars.firebaseMessager = FirebaseMessager()
     global_vars.firebaseMessager.set_ids(ids)
+
+    LOG_DEBUG(debug_tag, 'Sending push notification that bot is starting')
     global_vars.firebaseMessager.push_notification(title="DCA Bot starting", body="Bot started at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
 
     USE_TESTNET = True
@@ -303,6 +308,7 @@ def main():
                             'Type: {}\n'.format(order.type) + \
                             'Status: {}\n'.format(order.status) + \
                             'Money spend: {}\n'.format(Decimal(order.price) * Decimal(order.origQty))
+        LOG_DEBUG(debug_tag, 'Sending push notification for filled order', order.to_info_string)
         global_vars.firebaseMessager.push_notification(title="Order filled!", body=message_body)
 
     # TODO: outsource this function
@@ -498,6 +504,7 @@ def main():
                         time.sleep(15)
 
                 LOG_INFO("Process exited")
+                LOG_DEBUG(debug_tag, 'Sending push notification that bot shut down')
                 global_vars.firebaseMessager.push_notification(title="Bot shut down", body="Bot shut down at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
             except KillProcessException:
                 LOG_CRITICAL_AND_NOTIFY(debug_tag, "Process killed from outside again... just wait a god damn moment!")
