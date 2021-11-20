@@ -1,7 +1,7 @@
 import time
 import datetime
 
-from logger import LOG_CRITICAL
+from logger import LOG_CRITICAL_AND_NOTIFY
 
 class UnknownIntervalException(Exception):
     pass
@@ -77,50 +77,50 @@ class DCAInvestmentParameter:
         if 'symbol' in json_object:
             self.symbol = json_object['symbol']
         else:
-            LOG_CRITICAL('Missing symbol in investment parameter')
+            LOG_CRITICAL_AND_NOTIFY('Missing symbol in investment parameter')
             raise KeyError('symbol')
 
         if 'investment_amount_quoteasset' in json_object:
             self.investment_amount_quoteasset = json_object['investment_amount_quoteasset']
         else:
-            LOG_CRITICAL('Missing investment_amount_quoteasset in investment parameter')
+            LOG_CRITICAL_AND_NOTIFY('Missing investment_amount_quoteasset in investment parameter')
             raise KeyError('investment_amount_quoteasset')
 
         if 'interval' in json_object:
             try:
                 self.interval = self.parse_interval_to_seconds(json_object['interval'])
             except UnknownIntervalException as e:
-                LOG_CRITICAL(e)
+                LOG_CRITICAL_AND_NOTIFY(e)
                 raise e
         else:
-            LOG_CRITICAL('Missing interval in investment parameter')
+            LOG_CRITICAL_AND_NOTIFY('Missing interval in investment parameter')
             raise KeyError('interval')
 
         if 'investment_time' in json_object:
             try:
                 self.investment_time = self.parse_investment_time_to_seconds(json_object['investment_time'])
             except InvalidParameterFormat as e:
-                LOG_CRITICAL(e)
+                LOG_CRITICAL_AND_NOTIFY(e)
                 raise e
         else:
-            LOG_CRITICAL('Missing investment_time in investment parameter')
+            LOG_CRITICAL_AND_NOTIFY('Missing investment_time in investment parameter')
             raise KeyError('investment_time')
 
         if 'start_date' in json_object:
             try:
                 self.start_date = self.date_to_seconds(json_object['start_date'])
             except InvalidParameterFormat as e:
-                LOG_CRITICAL(e)
+                LOG_CRITICAL_AND_NOTIFY(e)
                 raise e
         else:
-            LOG_CRITICAL('Missing start_date in investment parameter')
+            LOG_CRITICAL_AND_NOTIFY('Missing start_date in investment parameter')
             raise KeyError('start_date')
         
         if 'start_date' in json_object:
             try:
                 self.start_date = self.date_to_seconds(json_object['start_date'])
             except InvalidParameterFormat as e:
-                LOG_CRITICAL(e)
+                LOG_CRITICAL_AND_NOTIFY(e)
                 raise e
         else:
             raise KeyError('start_date')

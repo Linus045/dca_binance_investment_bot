@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 from trading_bot import TradingBot
 from dca_investment_parameter import *
 from binance_order import BinanceOrder
-from logger import init_logger, LOG_INFO, LOG_ERROR, LOG_DEBUG, LOG_WARNING, LOG_CRITICAL
+from logger import *
 
 def load_last_orders(filepath : str):
     if os.path.isfile(filepath):
@@ -48,11 +48,11 @@ def check_order_possible(bot : TradingBot, amount : Decimal, price : Decimal, sy
     # check if price is in filter
     price_filter = [f for f in filter_info if f['filterType'] == 'PRICE_FILTER'][0]
     if price_filter is None:
-        LOG_ERROR(debug_tag, 'No price filter found for symbol {}'.format(symbol))
+        LOG_ERROR_AND_NOTIFY(debug_tag, 'No price filter found for symbol {}'.format(symbol))
         return False
     else:
         if price < Decimal(price_filter['minPrice']) or price > Decimal(price_filter['maxPrice']):
-            LOG_ERROR(debug_tag, 'Price {} is not in price filter for symbol {} [{}-{}]'.format(price, symbol, price_filter['minPrice'], price_filter['maxPrice']))
+            LOG_ERROR_AND_NOTIFY(debug_tag, 'Price {} is not in price filter for symbol {} [{}-{}]'.format(price, symbol, price_filter['minPrice'], price_filter['maxPrice']))
             return False
         
         # check if price matches step size
@@ -61,7 +61,7 @@ def check_order_possible(bot : TradingBot, amount : Decimal, price : Decimal, sy
             correct_price = round(price / price_step_size) * price_step_size
             LOG_DEBUG(debug_tag, 'Rounded price {} with step size {} to: {}'.format(price, price_step_size, correct_price))
             if price != correct_price:
-                LOG_ERROR(debug_tag, 'Price {} does not match price filters step size for symbol {} of {}'.format(price, symbol, price_step_size))
+                LOG_ERROR_AND_NOTIFY(debug_tag, 'Price {} does not match price filters step size for symbol {} of {}'.format(price, symbol, price_step_size))
                 return False
             else:
                 LOG_DEBUG(debug_tag, 'Requested order price {} matches rounded price {} with stepsize of {} for symbol {}'.format(price, correct_price, price_step_size, symbol))
@@ -69,11 +69,11 @@ def check_order_possible(bot : TradingBot, amount : Decimal, price : Decimal, sy
     # check if amount/quantity is in filter
     lot_filter = [f for f in filter_info if f['filterType'] == 'LOT_SIZE'][0]
     if lot_filter is None:
-        LOG_ERROR(debug_tag, 'No lot filter found for symbol {}'.format(symbol))
+        LOG_ERROR_AND_NOTIFY(debug_tag, 'No lot filter found for symbol {}'.format(symbol))
         return False
     else:
         if amount < Decimal(lot_filter['minQty']) or amount > Decimal(lot_filter['maxQty']):
-            LOG_ERROR(debug_tag, 'Amount {} is not in amount filter for symbol {} [{}-{}]'.format(amount, symbol, lot_filter['minQty'], lot_filter['maxQty']))
+            LOG_ERROR_AND_NOTIFY(debug_tag, 'Amount {} is not in amount filter for symbol {} [{}-{}]'.format(amount, symbol, lot_filter['minQty'], lot_filter['maxQty']))
             return False
         
         # check if amount matches lot step size
@@ -82,31 +82,31 @@ def check_order_possible(bot : TradingBot, amount : Decimal, price : Decimal, sy
             correct_amount = round(amount / lot_step_size) * lot_step_size
             LOG_DEBUG(debug_tag, 'Rounded amount {} with lot step size {} to: {}'.format(amount, lot_step_size, correct_amount))
             if amount != correct_amount:
-                LOG_ERROR(debug_tag, 'Amount {} does not match amount filters step size for symbol {} of {}'.format(amount, symbol, lot_step_size))
+                LOG_ERROR_AND_NOTIFY(debug_tag, 'Amount {} does not match amount filters step size for symbol {} of {}'.format(amount, symbol, lot_step_size))
                 return False
             else:
                 LOG_DEBUG(debug_tag, 'Requested amount {} matches rounded amount {} with step size of {} for symbol {}'.format(amount, correct_amount, lot_step_size, symbol))
         notion_filter = [f for f in filter_info if f['filterType'] == 'MIN_NOTIONAL'][0]
         if notion_filter is None:
-            LOG_ERROR(debug_tag, 'No notion filter found for symbol {}'.format(symbol))
+            LOG_ERROR_AND_NOTIFY(debug_tag, 'No notion filter found for symbol {}'.format(symbol))
             return False
         else:
             # check if notional is bigger or equal to min notional
             notion = amount * price
             min_notional = Decimal(notion_filter['minNotional'])
             if notion < min_notional:
-                LOG_ERROR(debug_tag, 'Notion {} is smaller than min notional {} for symbol {}'.format(notion, min_notional, symbol))
+                LOG_ERROR_AND_NOTIFY(debug_tag, 'Notion {} is smaller than min notional {} for symbol {}'.format(notion, min_notional, symbol))
                 return False
     
     # check if account has enough balance
     quote_asset = symbol_info['quoteAsset']
     quote_balance = bot.get_asset_balance(quote_asset)
     if quote_balance is None:
-        LOG_ERROR(debug_tag, 'No balance found for {}'.format(quote_asset))
+        LOG_ERROR_AND_NOTIFY(debug_tag, 'No balance found for {}'.format(quote_asset))
         return False
     else:
         if quote_balance < amount:
-            LOG_ERROR(debug_tag, 'Not enough {} in account to complete order'.format(quote_asset))
+            LOG_ERROR_AND_NOTIFY(debug_tag, 'Not enough {} in account to complete order'.format(quote_asset))
             return False
     
     return True
@@ -124,7 +124,7 @@ def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmen
     filters = symbol_info['filters']
     lot_filter = [f for f in filters if f['filterType'] == 'LOT_SIZE'][0]
     if lot_filter is None:
-        LOG_ERROR(debug_tag, 'No lot filter found for symbol {}'.format(investment_strategy.symbol))
+        LOG_ERROR_AND_NOTIFY(debug_tag, 'No lot filter found for symbol {}'.format(investment_strategy.symbol))
     else:
         lot_step_size = Decimal(lot_filter['stepSize'])
         amount = round(amount / lot_step_size) * lot_step_size
@@ -143,7 +143,7 @@ def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmen
             message_body = 'New Investment order created:\n' +  new_order.to_info_string()
             global_vars.firebaseMessager.push_notification(title="New order created", body=message_body)
     except BinanceAPIException as e:
-        LOG_ERROR(debug_tag, 'Failed to create investment order:', e)
+        LOG_ERROR_AND_NOTIFY(debug_tag, 'Failed to create investment order:', e)
         # TODO: Move this to a separate function (event handler)
         message_body = 'Failed to create investment order:\n' + \
                         'Symbol: {}\n'.format(investment_strategy.symbol) + \
@@ -157,8 +157,8 @@ def log_and_raise_exeption(e : Exception, debug_tag : str = '[Exception]', raise
     exception = e
     excepton_info = traceback.format_exc()
     try:
-        LOG_ERROR(debug_tag, e)
-        LOG_ERROR(debug_tag, traceback.format_exc())
+        LOG_ERROR_AND_NOTIFY(debug_tag, e)
+        LOG_ERROR_AND_NOTIFY(debug_tag, traceback.format_exc())
     except Exception as ex:
         print(debug_tag, "Initial exception that was raised:")
         print(debug_tag, e)
@@ -211,7 +211,7 @@ def main():
     if os.path.exists(dotEnvPath):
         load_dotenv(dotEnvPath)
     else:
-        LOG_WARNING(debug_tag, "No .env file found at {}", dotEnvPath)
+        LOG_WARNING_AND_NOTIFY(debug_tag, "No .env file found at {}", dotEnvPath)
 
     ids = []
     if 'firebase_project_id' in config:
@@ -243,7 +243,7 @@ def main():
     if 'USE_TESTNET' in config:
         USE_TESTNET = config['USE_TESTNET']
     else:
-        LOG_ERROR(debug_tag, 'No USE_TESTNET option found in config file')
+        LOG_ERROR_AND_NOTIFY(debug_tag, 'No USE_TESTNET option found in config file')
         raise Exception('No USE_TESTNET option found in config file')
 
     check_interval = 60 * 30 # 30 minutes
@@ -252,12 +252,12 @@ def main():
         try:
             check_interval = int(config['check_interval'])
         except ValueError:
-            LOG_ERROR(debug_tag, 'Check interval in config file is not a number')
+            LOG_ERROR_AND_NOTIFY(debug_tag, 'Check interval in config file is not a number')
             raise Exception('Check interval in config file is not a number')
         
         # check_interval must be at least 30 seconds
         if check_interval < 30:
-            LOG_ERROR(debug_tag, 'Check interval in config file is too small. (>=30 seconds)')
+            LOG_ERROR_AND_NOTIFY(debug_tag, 'Check interval in config file is too small. (>=30 seconds)')
             raise Exception('Check interval in config file is too small. (>=30 seconds)')
         LOG_DEBUG(debug_tag, 'Check interval set to {} seconds ({})'.format(check_interval, str(datetime.timedelta(seconds=check_interval))))
     else:
@@ -279,7 +279,7 @@ def main():
         except Exception as e:
             log_and_raise_exeption(e)
     else:
-        LOG_ERROR(debug_tag, 'Failed to load dca investment parameter file at {}'.format(dca_file_path))
+        LOG_ERROR_AND_NOTIFY(debug_tag, 'Failed to load dca investment parameter file at {}'.format(dca_file_path))
 
     # store every order made, don't retrieve it from binance in case a manuel order is made
     fullfilled_orders = load_last_orders(order_filepath)
@@ -319,10 +319,10 @@ def main():
                     try:
                         binance_order = bot.get_order_status(order.symbol, order.orderId)
                     except requests.exceptions.ReadTimeout as e:
-                        LOG_WARNING(debug_tag, 'Timeout while checking order status for order {} {}'.format(order.symbol, order.orderId))
+                        LOG_WARNING_AND_NOTIFY(debug_tag, 'Timeout while checking order status for order {} {}'.format(order.symbol, order.orderId))
                         continue
                     except requests.exceptions.ConnectionError as e:
-                        LOG_WARNING(debug_tag, 'Connection error while checking order status for order {} {}'.format(order.symbol,order.orderId))
+                        LOG_WARNING_AND_NOTIFY(debug_tag, 'Connection error while checking order status for order {} {}'.format(order.symbol,order.orderId))
                         continue
 
                     if binance_order.status == ORDER_STATUS_FILLED:
@@ -339,12 +339,12 @@ def main():
                             global_vars.firebaseStorage.set_fulfilled_orders(fullfilled_orders)
         except (KillProcessException, KeyboardInterrupt) as e:
             # this should not happen since it is called in a seperate thread but just in case
-            LOG_CRITICAL(debug_tag, e)
-            LOG_CRITICAL(debug_tag, 'KillProcessException received, stopping thread forcefully')
+            LOG_CRITICAL_AND_NOTIFY(debug_tag, e)
+            LOG_CRITICAL_AND_NOTIFY(debug_tag, 'KillProcessException received, stopping thread forcefully')
             pass
         except Exception as e:
-            LOG_ERROR(debug_tag, 'Error while checking unfullfilled orders:', e)
-            LOG_ERROR(debug_tag, 'Order listener stopped')
+            LOG_ERROR_AND_NOTIFY(debug_tag, 'Error while checking unfullfilled orders:', e)
+            LOG_ERROR_AND_NOTIFY(debug_tag, 'Order listener stopped')
             log_and_raise_exeption(e, debug_tag)
         LOG_DEBUG(debug_tag, 'Order listener stopped')
 
@@ -459,7 +459,7 @@ def main():
                 time.sleep(15)
             except Exception as e:
                 log_and_raise_exeption(e, raise_exception=False)
-                LOG_ERROR(debug_tag, "Error while checking if DCA investment is neccessary. Aborting program")
+                LOG_ERROR_AND_NOTIFY(debug_tag, "Error while checking if DCA investment is neccessary. Aborting program")
                 running = False
                 break
     finally:
@@ -486,8 +486,8 @@ def main():
                             try:
                                 bot.cancel_order(order.symbol, order.orderId)
                             except BinanceAPIException as e:
-                                LOG_ERROR('Order {} could not be canceled'.format(order.orderId))
-                                LOG_ERROR(e)
+                                LOG_ERROR_AND_NOTIFY('Order {} could not be canceled'.format(order.orderId))
+                                LOG_ERROR_AND_NOTIFY(e)
                                 continue
                         canceled = True
                     except requests.exceptions.ReadTimeout:
@@ -500,7 +500,7 @@ def main():
                 LOG_INFO("Process exited")
                 global_vars.firebaseMessager.push_notification(title="Bot shut down", body="Bot shut down at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
             except KillProcessException:
-                LOG_CRITICAL(debug_tag, "Process killed from outside again... just wait a god damn moment!")
+                LOG_CRITICAL_AND_NOTIFY(debug_tag, "Process killed from outside again... just wait a god damn moment!")
             except Exception as e:
                 log_and_raise_exeption(e)
 

@@ -9,7 +9,7 @@ from binance import Client
 from binance.enums import *
 
 from binance_order import BinanceOrder
-from logger import LOG_DEBUG, LOG_ERROR, LOG_INFO, LOG_WARNING
+from logger import LOG_DEBUG, LOG_ERROR_AND_NOTIFY, LOG_INFO, LOG_WARNING
 import global_vars
 
 # currently not used
@@ -109,7 +109,7 @@ class TradingBot:
     
     def check_connected(self):
         if not self.connected:
-            LOG_ERROR(self.debug_tag,"Client not connected to Binance", 'Please call TradingBot::connect()')
+            LOG_ERROR_AND_NOTIFY(self.debug_tag,"Client not connected to Binance", 'Please call TradingBot::connect()')
             raise Exception('Binance client is not connected')
 
     def get_symbol_info(self, symbol):
