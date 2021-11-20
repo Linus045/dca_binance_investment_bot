@@ -140,13 +140,7 @@ def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmen
             LOG_INFO('New Investment order created:', new_order)
 
             # TODO: Move this to a separate function (event handler)
-            message_body = 'New Investment order created:\n' + \
-                            'Symbol: {}\n'.format(investment_strategy.symbol) + \
-                            'Amount: {}\n'.format(amount) + \
-                            'Price: {}\n'.format(price) + \
-                            'Order ID: {}\n'.format(new_order.orderId) + \
-                            'Order Status: {}\n'.format(new_order.status) +\
-                            'Money spend: {}\n'.format( Decimal(new_order.price) * Decimal(new_order.origQty))
+            message_body = 'New Investment order created:\n' +  new_order.to_info_string()
             global_vars.firebaseMessager.push_notification(title="New order created", body=message_body)
     except BinanceAPIException as e:
         LOG_ERROR(debug_tag, 'Failed to create investment order:', e)
