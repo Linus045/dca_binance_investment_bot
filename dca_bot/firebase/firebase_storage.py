@@ -46,7 +46,7 @@ class FirebaseStorage:
             ids.append(user.to_dict()['messaging_token'])
         return ids
 
-    def set_fulfilled_orders(self, orders : list[BinanceOrder]):
+    def set_fulfilled_orders(self, orders : list):
         self.__check_connection()
         fulfilled_orders = self.db.collection(COLLECTION_FULFILLED_ORDERS)
         for order in orders:
