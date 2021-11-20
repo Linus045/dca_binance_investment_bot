@@ -216,15 +216,15 @@ def main():
     ids = []
     if 'firebase_project_id' in config:
         firebase_project_id = config['firebase_project_id']
-        firebaseStorage = FirebaseStorage(firebase_project_id)
-        firebaseStorage.connect()
+        global_vars.firebaseStorage = FirebaseStorage(firebase_project_id)
+        global_vars.firebaseStorage.connect()
 
         # retrieve user ids from firebase
         if 'bot_notification_id' in config:
             bot_notification_id = config['bot_notification_id']
             
             LOG_INFO(debug_tag, 'Retrieving all users to notify from firebase')
-            ids = firebaseStorage.get_all_ids(bot_notification_id)
+            ids = global_vars.firebaseStorage.get_all_ids(bot_notification_id)
             if len(ids) == 0:
                 LOG_WARNING(debug_tag, 'No users found to notify')
             else:
@@ -284,6 +284,9 @@ def main():
     # store every order made, don't retrieve it from binance in case a manuel order is made
     fullfilled_orders = load_last_orders(order_filepath)
 
+    if global_vars.firebaseStorage is not None:
+        global_vars.firebaseStorage.set_fulfilled_orders(fullfilled_orders)
+
     # TODO: outsource this function
     def exists_unfullfilled_order_for_symbol(symbol : str):
         for order in unfullfilled_orders:
@@ -331,6 +334,9 @@ def main():
                         with open(order_filepath, 'w') as f:
                             orders = [o.asDict() for o in fullfilled_orders]
                             json.dump(orders, f, indent=4, ensure_ascii=False)
+
+                        if global_vars.firebaseStorage is not None:
+                            global_vars.firebaseStorage.set_fulfilled_orders(fullfilled_orders)
         except (KillProcessException, KeyboardInterrupt) as e:
             # this should not happen since it is called in a seperate thread but just in case
             LOG_CRITICAL(debug_tag, e)
@@ -427,6 +433,17 @@ def main():
                     else:
                         LOG_INFO('Investment starts at {}'.format(investment_start.strftime('%d.%m.%Y %H:%M:%S')))
                 time.sleep(check_interval)
+
+                # notify user if there are unfullfilled orders
+                if len(unfullfilled_orders) > 0:
+                    s = ''
+                    for order in unfullfilled_orders:
+                        # concatenate each orders symbol and side and time and price as one string
+                        s += bot.order_to_string(order) + '\n'
+                        global_vars.firebaseMessager.push_notification('Unfullfilled orders', s)
+                else:
+                    LOG_INFO('All orders are fullfilled')
+
             except KillProcessException as e:
                 LOG_INFO(debug_tag, 'Process killed from outside')
                 running = False

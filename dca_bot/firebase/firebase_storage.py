@@ -1,9 +1,17 @@
+import datetime
 import firebase_admin
 from firebase_admin import credentials
 from google.cloud import firestore
 from firebase_admin import firestore
 
+from binance_order import BinanceOrder
+
 COLLECTION_NOTIFICATION_IDS = u'notification_ids'
+COLLECTION_FULFILLED_ORDERS = u"fulfilled_orders"
+
+KEY_ORDER_TITLE = "title"
+KEY_ORDER_BODY = "body"
+KEY_ORDER_DATE = "date"
 
 class FirebaseStorage:
     def __init__(self, project_id) -> None:
@@ -15,7 +23,7 @@ class FirebaseStorage:
         })
 
         self.connected = False
-        self.db = None
+        self.db : firestore.Client = None
 
     def connect(self):
         self.db = firestore.client()
@@ -37,3 +45,13 @@ class FirebaseStorage:
         for user in users:
             ids.append(user.to_dict()['messaging_token'])
         return ids
+
+    def set_fulfilled_orders(self, orders : list[BinanceOrder]):
+        self.__check_connection()
+        fulfilled_orders = self.db.collection(COLLECTION_FULFILLED_ORDERS)
+        for order in orders:
+            fulfilled_orders.document(str(order.orderId)).set({
+                KEY_ORDER_TITLE : order.symbol,
+                KEY_ORDER_BODY : order.to_info_string(),
+                KEY_ORDER_DATE : datetime.datetime.fromtimestamp(order.time/1000).strftime('%Y-%m-%d %H:%M:%S')
+            })
