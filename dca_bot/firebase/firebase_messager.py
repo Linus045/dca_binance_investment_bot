@@ -4,7 +4,6 @@ from time import sleep
 from dotenv import load_dotenv
 from pyfcm import FCMNotification
 
-
 class FirebaseMessager:
 
     def __init__(self) -> None:
@@ -26,7 +25,10 @@ class FirebaseMessager:
 
         message_title = title
         message_body = body
-        result = self.push_service.notify_multiple_devices(registration_ids=self.ids, message_title=message_title, message_body=message_body)
 
-        # TODO: Handle error cases here
-        print(result)
+        try:
+            result = self.push_service.notify_multiple_devices(registration_ids=self.ids, message_title=message_title, message_body=message_body)
+            # TODO: Handle error cases here
+            print(result)
+        except:
+            pass
