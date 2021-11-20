@@ -442,13 +442,10 @@ def main():
 
                 # notify user if there are unfullfilled orders
                 if len(unfullfilled_orders) > 0:
-                    s = ''
+                    LOG_DEBUG(debug_tag, 'Sending push notifications for unfullfilled orders')
                     for order in unfullfilled_orders:
-                        # concatenate each orders symbol and side and time and price as one string
-                        s += bot.order_to_string(order) + '\n'
-                        global_vars.firebaseMessager.push_notification('Unfullfilled orders', s)
-                else:
-                    LOG_INFO('All orders are fullfilled')
+                        LOG_DEBUG(debug_tag, 'Order:', order.to_info_string())
+                        global_vars.firebaseMessager.push_notification("Unfulfilled Order {}".format(order.orderId), order.to_info_string())
 
             except KillProcessException as e:
                 LOG_INFO(debug_tag, 'Process killed from outside')
