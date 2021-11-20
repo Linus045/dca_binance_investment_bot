@@ -1,3 +1,5 @@
+import datetime
+from decimal import Decimal
 class BinanceOrder:
     """
     Used to represent a Binance json order object 
@@ -57,6 +59,25 @@ class BinanceOrder:
 
     def __str__(self) -> str:
         return str(self.asDict())
+
+    def to_info_string(self) -> str:
+        status = self.status
+        order_id = self.orderId
+        order_type = self.type
+        side = self.side
+        symbol = self.symbol
+        price = self.price
+        quantity = self.origQty
+        date = self.time
+        price = Decimal(price)
+        quantity = Decimal(quantity)
+        date = self.time
+        if date != None:
+            date = datetime.datetime.fromtimestamp(date/1000).strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            date = "N/A"
+        return "| {}-Order | {} | {} | {} | {} | {} | Price: {} | Quantity: {} | Calculated value in quote (price*quantity): {}".format(order_type, order_id, date, status, side, symbol, price, quantity, price*quantity)
+
 
     def asDict(self):
         return {

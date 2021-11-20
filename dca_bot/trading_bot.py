@@ -199,50 +199,15 @@ class TradingBot:
         self.check_connected()
         LOG_INFO(self.client.cancel_order(symbol=symbol, orderId=order_id))
 
-    def print_order(self, order_type, order_id, date, status, side, symbol, price, quantity):
-        price = Decimal(price)
-        quantity = Decimal(quantity)
-        if date != None:
-            date = datetime.datetime.fromtimestamp(date/1000).strftime('%Y-%m-%d %H:%M:%S')
-        else:
-            date = "N/A"
-
-        LOG_INFO("| {}-Order | {} | {} | {} | {} | {} | Price: {} | Quantity: {} | Calculated value in quote (price*quantity): {}".format(order_type, order_id, date, status, side, symbol, price, quantity, price*quantity))
-
     def print_orders(self,orders):
         if len(orders) > 0:
             LOG_INFO("------------------------------------------------")
             for order in orders:
-                status = order.status
-                order_id = order.orderId
-                type = order.type
-                side = order.side
-                symbol = order.symbol
-                price = order.price
-                quantity = order.origQty
-                date = order.time
-                self.print_order(type, order_id, date, status, side, symbol, price, quantity)
+                LOG_INFO(order.to_info_string())
             LOG_INFO("------------------------------------------------")
         else:
             LOG_INFO("NO ORDERS")
         
-    def print_orders_object(self,orders):
-        if len(orders) > 0:
-            LOG_INFO("------------------------------------------------")
-            for order in orders:
-                status = order['status']
-                order_id = order['orderId']
-                type = order['type']
-                side = order['side']
-                symbol = order['symbol']
-                price = order['price']
-                quantity = order['origQty']
-                date = order['time']
-                self.print_order(type, order_id, date, status, side, symbol, price, quantity)
-                LOG_INFO("------------------------------------------------")
-        else:
-            LOG_INFO("NO ORDERS")
-
     def get_asset_balance(self, asset : str):
         self.check_connected()
         return Decimal(self.client.get_asset_balance(asset)['free'])
