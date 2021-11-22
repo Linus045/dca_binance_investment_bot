@@ -31,51 +31,6 @@ getcontext().prec = 8
 bot : TradingBot = None
 order_list_manager: OrderListManager = None
 
-def invest_at_current_price(investment_strategy : DCAInvestmentParameter):
-    price = bot.get_avg_price(investment_strategy.symbol)
-    
-    investment_amount = investment_strategy.investment_amount_quoteasset
-    amount = investment_amount / price
-    debug_tag = '[Order Creation]'
-    # round amount to match step size
-    symbol_info = bot.get_symbol_info(investment_strategy.symbol)
-    # get filter for LOT_SIZE
-    filters = symbol_info['filters']
-    lot_filter = [f for f in filters if f['filterType'] == 'LOT_SIZE'][0]
-    if lot_filter is None:
-        LOG_ERROR_AND_NOTIFY(debug_tag, 'No lot filter found for symbol {}'.format(investment_strategy.symbol))
-    else:
-        lot_step_size = Decimal(lot_filter['stepSize'])
-        amount = round(amount / lot_step_size) * lot_step_size
-
-    # buy a bit below the current price
-    price = round(round(price / 10) * 10)
-    LOG_INFO('Defined Investment per interval ({}): {}'.format(str(datetime.timedelta(seconds=investment_strategy.interval)), investment_amount))
-    LOG_INFO('Investing {} at price {} for {}'.format(amount, price, investment_strategy.symbol))
-    try:
-        symbol_info = bot.get_symbol_info(investment_strategy.symbol)
-        quote_balance = bot.get_asset_balance(symbol_info['quoteAsset'])
-        if OrderValidator.check_order_possible(symbol_info, quote_balance, investment_strategy.symbol, amount, price):
-            new_order = bot.create_limit_buy_order(investment_strategy.symbol, price, amount)
-            order_list_manager.add_new_order(new_order)
-            LOG_INFO('New Investment order created:', new_order)
-
-            # TODO: Move this to a separate function (event handler)
-            message_body = 'New Investment order created:\n' +  new_order.to_info_string()
-            
-            LOG_DEBUG(debug_tag, 'Sending push notification for created order:', new_order.to_info_string())
-            global_vars.firebaseMessager.push_notification(title="New order created", body=message_body)
-    except BinanceAPIException as e:
-        LOG_ERROR_AND_NOTIFY(debug_tag, 'Failed to create investment order:', e)
-        # TODO: Move this to a separate function (event handler)
-        message_body = 'Failed to create investment order:\n' + \
-                        'Symbol: {}\n'.format(investment_strategy.symbol) + \
-                        'Amount: {}\n'.format(amount) + \
-                        'Price: {}\n'.format(price) + \
-                        'Error: {}\n'.format(e)
-        LOG_DEBUG(debug_tag, 'Sending push notification failed order:', message_body)
-        global_vars.firebaseMessager.push_notification(title="Failed to create investment order", body=message_body)
-
 def signal_handler(signal, frame):
     raise KillProcessException('Process killed by signal {}'.format(signal))
 
@@ -104,6 +59,23 @@ def get_order_status_callback(symbol, order_id):
         LOG_WARNING_AND_NOTIFY(debug_tag, 'Connection error while checking order status for order {} {}'.format(symbol, order_id))
         return None
 
+def invest(investment_strategy : DCAInvestmentParameter) -> None:
+    debug_tag = '[Main - invest]'
+
+    symbol = investment_strategy.symbol
+    amount = investment_strategy.investment_amount_quoteasset
+    interval = investment_strategy.interval
+    LOG_INFO('Defined Investment with interval ({}): {}'.format(str(datetime.timedelta(seconds=interval)), amount))
+
+    new_order = bot.invest_at_current_price(symbol, amount)
+    if new_order is not None:
+        order_list_manager.add_new_order(new_order)
+        LOG_INFO(debug_tag, 'New Investment order created:', new_order)
+
+        # TODO: Move this to a separate function (event handler)
+        message_body = 'New Investment order created:\n' +  new_order.to_info_string()
+        LOG_DEBUG(debug_tag, 'Sending push notification for created order:', new_order.to_info_string())
+        global_vars.firebaseMessager.push_notification(title="New order created", body=message_body)
 
 def main():
     global bot, order_list_manager
@@ -275,7 +247,7 @@ def main():
                         for order in order_list_manager.fulfilled_orders():
                             if order.symbol == symbol and order.side == SIDE_BUY:
                                 last_order = order
-
+                        should_invest = False
                         if last_order != None:
                             time_of_last_investment = datetime.datetime.fromtimestamp(last_order.time / 1000)
                             LOG_INFO('Last investment time:', time_of_last_investment.strftime('%d.%m.%Y %H:%M:%S'))
@@ -293,15 +265,19 @@ def main():
                             if now >= next_investment_timestamp:
                                 LOG_INFO('Last investment is older than interval of {}, invest again'.format(str(datetime.timedelta(seconds=investment_strategy.interval))))
                                 if not exists_unfulfilled_order_for_symbol(symbol):
-                                    invest_at_current_price(investment_strategy)
+                                    should_invest = True
                                 else:
                                     LOG_INFO('Investment order is in place, wait for it to be filled')
                         else:
                             if not exists_unfulfilled_order_for_symbol(symbol):
                                 LOG_INFO('No previous investment found, invest now')
-                                invest_at_current_price(investment_strategy)
+                                should_invest = True
                             else:
                                 LOG_INFO('Investment order is in place, wait for it to be filled')
+
+                        # invest in crypto
+                        if should_invest:
+                            invest(investment_strategy)
 
                         LOG_INFO('------------------------------------------------')
                         # print orders
