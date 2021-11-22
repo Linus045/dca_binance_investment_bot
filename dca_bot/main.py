@@ -5,12 +5,11 @@ import datetime
 import json
 import time
 import signal
-from decimal import Decimal, getcontext
+from decimal import getcontext
 
 from binance.enums import *
 from binance.enums import ORDER_TYPE_LIMIT
 from binance.exceptions import BinanceAPIException
-from order_validator import OrderValidator
 
 from firebase.firebase_storage import FirebaseStorage
 from firebase.firebase_messager import FirebaseMessager
@@ -24,6 +23,7 @@ from logger import *
 from order_fulfilled_checker_thread import OrderFulfilledChecker
 from order_list_manager import OrderListManager
 from exceptions import KillProcessException
+from paths import Paths
 
 # set precision for Decimal to 8 since most numbers in binance use max 8 digits
 getcontext().prec = 8
@@ -40,7 +40,6 @@ def load_config(config_filepath : str):
             return json.load(config_file)
     else:
         raise Exception('Config file {} does not exist'.format(config_filepath))
-
 
 def on_order_filled_callback(order : BinanceOrder) -> None:
     debug_tag = '[OrderFulfilledChecker Callback - on_order_filled]'
@@ -80,14 +79,8 @@ def invest(investment_strategy : DCAInvestmentParameter) -> None:
 def main():
     global bot, order_list_manager
     debug_tag = '[Startup]'
-    dca_file_name = 'dca_investment_parameter.json'
-    configs_directory = 'configs'
-    dca_file_path = os.path.join(configs_directory, dca_file_name)
 
-    order_dirpath = 'orders'
-    order_filepath = os.path.join(order_dirpath, 'orders.json')
-
-    order_list_manager = OrderListManager(order_filepath)
+    order_list_manager = OrderListManager(Paths.order_filepath)
     order_list_manager.load_fulfilled_from_file()
 
     order_fulfilled_checker_thread : OrderFulfilledChecker = OrderFulfilledChecker(order_list_manager,
@@ -95,8 +88,7 @@ def main():
 
     # load config file
     # TODO: convert to config class for easier access/validation
-    config_file = os.path.join(configs_directory, 'config.json')
-    config = load_config(config_file)
+    config = load_config(Paths.config_filepath)
 
     # init logger
     if 'LOGGING' in config:
@@ -107,7 +99,7 @@ def main():
         raise Exception('No logging options found in config file')
 
     # load environment variables
-    dotEnvPath = os.path.join(configs_directory, '.env')
+    dotEnvPath = os.path.join(Paths.config_directory, '.env')
     if os.path.exists(dotEnvPath):
         load_dotenv(dotEnvPath)
     else:
@@ -177,16 +169,16 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     dca_investment_strategies = []
-    if os.path.isfile(dca_file_path):
+    if os.path.isfile(Paths.dca_file_path):
         try:
-            with open(dca_file_path) as f:
+            with open(Paths.dca_file_path) as f:
                 dca_investments = json.load(f)
                 for dca_investment in dca_investments:
                     dca_investment_strategies.append(DCAInvestmentParameter(dca_investment))
         except Exception as e:
             log_and_raise_exeption(e)
     else:
-        LOG_ERROR_AND_NOTIFY(debug_tag, 'Failed to load dca investment parameter file at {}'.format(dca_file_path))
+        LOG_ERROR_AND_NOTIFY(debug_tag, 'Failed to load dca investment parameter file at {}'.format(Paths.dca_file_path))
 
     # store every order made, don't retrieve it from binance in case a manuel order is made
     order_list_manager.load_fulfilled_from_file()
