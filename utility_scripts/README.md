@@ -2,10 +2,14 @@ This is a systemd service to automatically run a script on boot and stop it grac
 The service will automatically restart on failure.
 To Install the systemd service:
 
-# 1 . Rename the file to `dca_traiding_bot.service.example` file to `dca_traiding_bot.service`
+# 1 . Copy the example file:
+```
+copy:
+cp dca_traiding_bot.service.example dca_traiding_bot.service
+```
 
 # 2. Set the corrct user/group:
-Replace the user and group with the correct user/group.
+Replace the User and Group with the correct user/group name.
 This is the user/group that will run the script.
 
 # 3. Set the correct path to the working directory:
@@ -52,10 +56,10 @@ WantedBy=multi-user.target
 # 5 Copy or move script to systemd service folder:
 ```
 copy:
-sudo cp raspberry_pi_scripts/dca_traiding_bot.service /etc/systemd/system/dca_traiding_bot.service
+cp dca_traiding_bot.service /etc/systemd/system/dca_traiding_bot.service
 
 move:
-sudo mv raspberry_pi_scripts/dca_traiding_bot.service /etc/systemd/system/dca_traiding_bot.service
+sudo mv dca_traiding_bot.service /etc/systemd/system/dca_traiding_bot.service
 ```
 
 # 6. Enable the service:
