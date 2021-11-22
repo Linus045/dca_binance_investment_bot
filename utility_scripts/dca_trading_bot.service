@@ -1,0 +1,22 @@
+[Unit]
+Description=DCA Trading Bot
+Documentation=https://github.com/Linus045/dca_binance_investment_bot
+After=network.target
+StartLimitIntervalSec=180
+StartLimitBurst=3
+
+[Service]
+Type=exec
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/Desktop/dca_binance_investment_bot/dca_bot
+ExecStart=/home/pi/Desktop/dca_binance_investment_bot/dca_bot/env/bin/python main.py
+KillSignal=SIGTERM
+RestartSec=10
+TimeoutStopSec=10
+Restart=on-failure
+StandardOutput=syslog+console
+StandardError=syslog+console
+
+[Install]
+WantedBy=multi-user.target
