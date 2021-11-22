@@ -5,6 +5,7 @@
     },
     "USE_TESTNET" : true,
     "check_interval" : 1800,
+    "SYNC_FULFILLED_ORDERS_TO_FIREBASE" : false,
     "bot_notification_id": "your_custom_id",
     "firebase_project_id" : "investment-bot-notifier"
 }
