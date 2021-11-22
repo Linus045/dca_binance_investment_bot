@@ -3,8 +3,9 @@ import firebase_admin
 from firebase_admin import credentials
 from google.cloud import firestore
 from firebase_admin import firestore
+from dca_bot.logger import LOG_DEBUG
 
-from binance_order import BinanceOrder
+import global_vars
 
 COLLECTION_NOTIFICATION_IDS = u'notification_ids'
 COLLECTION_FULFILLED_ORDERS = u"fulfilled_orders"
@@ -48,6 +49,12 @@ class FirebaseStorage:
 
     def set_fulfilled_orders(self, orders : list):
         self.__check_connection()
+
+        if not global_vars.sync_fulfilled_orders_to_firebase:
+            LOG_DEBUG('Not syncing fulfilled orders to firebase: SYNC_FULFILLED_ORDERS_TO_FIREBASE is False')
+            return
+
+        LOG_DEBUG('Syncing fulfilled orders to firebase: SYNC_FULFILLED_ORDERS_TO_FIREBASE is True')
         fulfilled_orders = self.db.collection(COLLECTION_FULFILLED_ORDERS)
         for order in orders:
             fulfilled_orders.document(str(order.orderId)).set({

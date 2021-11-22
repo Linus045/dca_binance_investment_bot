@@ -216,6 +216,11 @@ def main():
         LOG_WARNING_AND_NOTIFY(debug_tag, "No .env file found at {}", dotEnvPath)
 
     ids = []
+    if 'SYNC_FULFILLED_ORDERS_TO_FIREBASE' in config:
+        global_vars.sync_fulfilled_orders_to_firebase = config['SYNC_FULFILLED_ORDERS_TO_FIREBASE']
+    else:
+        LOG_INFO(debug_tag, 'No SYNC_FULFILLED_ORDERS_TO_FIREBASE option found in config file, using default: {}'.format(global_vars.sync_fulfilled_orders_to_firebase))
+
     if 'firebase_project_id' in config:
         firebase_project_id = config['firebase_project_id']
         global_vars.firebaseStorage = FirebaseStorage(firebase_project_id)
