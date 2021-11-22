@@ -13,6 +13,8 @@ timesync contains the code for the time synchronization (Currently not integrate
 
         BINANCE_KEY=<Binace Api key here>
         BINANCE_SECRET=<Binance Api Secret here>
+        FIREBASE_SERVER_KEY=<Firebase Server Key here> (only neccessary when using firebase cloud messaging see below)
+        GOOGLE_APPLICATION_CREDENTIALS=<path to json file> (only neccessary when using firebase cloud messaging see below)
 
 Get Binance Testnet API keys from: https://testnet.binance.vision/ 
 
@@ -139,8 +141,6 @@ Windows:
 
 <br />
 <br />
-<br />
-<br />
 
 Sidenote: If you want to deactivate the virtual environment run:
 
@@ -151,8 +151,6 @@ Linux
 Windows
 
         ...\dca_binance_investment_bot\dca_bot> deactivate
-<br />
-<br />
 <br />
 <br />
 
@@ -175,3 +173,43 @@ Linux:
 Windows:
 
         ...\dca_binance_investment_bot\dca_bot> python main.py
+
+
+# How to connect the bot to Firebase (to receive messages via firebase cloud messaging and the investment_bot_notifier Android app)
+
+### 1. Create a firebase project
+Go to https://console.firebase.google.com/ and create a new project.
+
+### 2. Copy the server key from the firebase project settings > cloud messaging > server key
+See https://console.firebase.google.com/project/< YOUR-PROJECT-ID >/settings/cloudmessaging
+
+This is needed to send messages to the user via firebase cloud messaging.
+### 3. Copy the Firebase Admin SDK key from the firebase project settings > Service Accounts > Firebase Admin SDK
+See https://console.firebase.google.com/project/< YOUR-PROJECT-ID >/settings/serviceaccounts/adminsdk
+
+Click "Create new private key" and store the json file somewhere secure.
+This is neccessary so the bot can store and load data from the firestore database (like device tokens and fulfilled orders).
+
+### 4. Add the values to your enviorment variables (see .env.example)
+Open the .env file and add the Cloud Messaging Server key and Firebase Admin SDK key.
+Also don't forget to activate the Firebase options in the config.json file.
+
+### 5. Create an Android app
+Go to https://console.firebase.google.com/project/< YOUR-PROJECT-Id >/overview and create a new app.
+
+Download the google-service.json file and place it in the root/investment_bot_notifier/app directory.
+
+### 6. Open Android Studio and build the app
+Open the app directory in Android Studio and build the app.
+
+### 7. Run the app
+Running the app on your phone/emulator is neccessary to receive messages via firebase cloud messaging.
+Upon starting the app, you should see a toast notification (little popup at the bottom) on your phone/emulator which notifies you that your app token has been send to the firebase server (might need start the app twice in case the token hasn't been generated yet).
+
+You should now see your token in the Firestore Database:
+https://console.firebase.google.com/project/< YOUR-PROJECT-ID >/firestore/data
+
+The document name is your unique Android ID and the messaging token is your unique Firebase token. (Usally does not change unless you reinstall the app/clear app data)
+You can install this app on multiple devices and they all will receive the same notifications from the bot.
+### 8. (Re-)start the bot 
+You should now receive messages via firebase cloud messaging on your phone/emulator.
