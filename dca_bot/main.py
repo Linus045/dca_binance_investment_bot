@@ -383,7 +383,7 @@ def main():
                 log_and_raise_exeption(e, raise_exception=False)
                 LOG_ERROR(debug_tag, "Error while checking if DCA investment is neccessary. Aborting program")
                 running = False
-                break
+                raise e
     finally:
             try:
                 # store fullfilled orders in file
