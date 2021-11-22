@@ -1,13 +1,20 @@
 import time
 import os
 import requests
+import datetime
 from decimal import Decimal
 
 from binance import Client
 from binance.enums import *
+from binance.exceptions import BinanceAPIException
 
 from binance_order import BinanceOrder
+
+#TODO: Remove LOG_INFO calls from this file or convert to LOG_DEBUG.
 from logger import LOG_DEBUG, LOG_ERROR_AND_NOTIFY, LOG_INFO, LOG_WARNING
+from order_validator import OrderValidator
+import global_vars
+
 class TradingBot:
     def __init__(self, use_testnet=True):
         self.debug_tag = "[TradingBot]"
@@ -93,3 +100,39 @@ class TradingBot:
     def cancel_all_orders_for_symbol(self, symbol : str):
         for order in self.get_orders(symbol):
             self.cancel_order(symbol, order.orderId)
+
+    def invest_at_current_price(self, symbol: str, quote_amount: Decimal) -> BinanceOrder:
+        price = self.get_avg_price(symbol)
+        amount = quote_amount / price
+        symbol_info = self.get_symbol_info(symbol)
+
+        # round amount to match step size
+        # get filter for LOT_SIZE
+        filters = symbol_info['filters']
+        lot_filter = [f for f in filters if f['filterType'] == 'LOT_SIZE'][0]
+        if lot_filter is None:
+            LOG_ERROR_AND_NOTIFY(self.debug_tag, 'No lot filter found for symbol {}'.format(symbol))
+        else:
+            lot_step_size = Decimal(lot_filter['stepSize'])
+            amount = round(amount / lot_step_size) * lot_step_size
+
+        price = round(round(price / 10) * 10)
+        LOG_INFO('Investing {} at price {} for {}'.format(amount, price, symbol))
+        try:
+            quote_balance = self.get_asset_balance(symbol_info['quoteAsset'])
+            if OrderValidator.check_order_possible(symbol_info, quote_balance, symbol, amount, price):
+                return self.create_limit_buy_order(symbol, price, amount)
+            else:
+                LOG_ERROR_AND_NOTIFY(self.debug_tag, 'Investment not possible')
+        except BinanceAPIException as e:
+            LOG_ERROR_AND_NOTIFY(self.debug_tag, 'Failed to create investment order:', e)
+            # TODO: Move this to a separate function (event handler)
+            message_body = 'Failed to create investment order:\n' + \
+                            'Symbol: {}\n'.format(symbol) + \
+                            'Amount: {}\n'.format(amount) + \
+                            'Price: {}\n'.format(price) + \
+                            'Error: {}\n'.format(e)
+            LOG_DEBUG(self.debug_tag, 'Sending push notification failed order:', message_body)
+            global_vars.firebaseMessager.push_notification(title="Failed to create investment order", body=message_body)
+        
+        return None
