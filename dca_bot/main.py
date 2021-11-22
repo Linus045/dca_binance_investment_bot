@@ -22,22 +22,17 @@ from trading_bot import TradingBot
 from dca_investment_parameter import *
 from binance_order import BinanceOrder
 from logger import *
+from order_fulfilled_checker_thread import OrderFulfilledChecker
+from order_list_manager import OrderListManager
+from exceptions import KillProcessException
 
-def load_last_orders(filepath : str):
-    if os.path.isfile(filepath):
-        with open(filepath) as f:
-            json_orders = json.load(f)
-            orders = [BinanceOrder(o) for o in json_orders]
-            return orders
-    else:
-        return []
-
-unfullfilled_orders = []
 # set precision for Decimal to 8 since most numbers in binance use max 8 digits
 getcontext().prec = 8
 
+bot : TradingBot = None
+order_list_manager: OrderListManager = None
 
-def check_order_possible(bot : TradingBot, amount : Decimal, price : Decimal, symbol : str):
+def check_order_possible(amount : Decimal, price : Decimal, symbol : str):
     symbol_info = bot.get_symbol_info(symbol)
     filter_info = symbol_info['filters']
 
@@ -111,7 +106,7 @@ def check_order_possible(bot : TradingBot, amount : Decimal, price : Decimal, sy
     return True
     
 
-def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmentParameter):
+def invest_at_current_price(investment_strategy : DCAInvestmentParameter):
     price = bot.get_avg_price(investment_strategy.symbol)
     
     investment_amount = investment_strategy.investment_amount_quoteasset
@@ -133,9 +128,9 @@ def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmen
     LOG_INFO('Defined Investment per interval ({}): {}'.format(str(datetime.timedelta(seconds=investment_strategy.interval)), investment_amount))
     LOG_INFO('Investing {} at price {} for {}'.format(amount, price, investment_strategy.symbol))
     try:
-        if check_order_possible(bot, amount, price, investment_strategy.symbol):
+        if check_order_possible(amount, price, investment_strategy.symbol):
             new_order = bot.create_limit_buy_order(investment_strategy.symbol, price, amount)
-            unfullfilled_orders.append(new_order)
+            order_list_manager.add_new_order(new_order)
             LOG_INFO('New Investment order created:', new_order)
 
             # TODO: Move this to a separate function (event handler)
@@ -154,27 +149,6 @@ def invest_at_current_price(bot : TradingBot, investment_strategy : DCAInvestmen
         LOG_DEBUG(debug_tag, 'Sending push notification failed order:', message_body)
         global_vars.firebaseMessager.push_notification(title="Failed to create investment order", body=message_body)
 
-def log_and_raise_exeption(e : Exception, debug_tag : str = '[Exception]', raise_exception : bool = True):
-    # try logging but if that doesnt work, try printing the exception
-    exception = e
-    excepton_info = traceback.format_exc()
-    try:
-        LOG_ERROR_AND_NOTIFY(debug_tag, e)
-        LOG_ERROR_AND_NOTIFY(debug_tag, traceback.format_exc())
-    except Exception as ex:
-        print(debug_tag, "Initial exception that was raised:")
-        print(debug_tag, e)
-        print(debug_tag, excepton_info)
-
-        print(debug_tag, "Another exception was raised during logging of the first exception:")
-        print(debug_tag, ex)
-        print(debug_tag, traceback.format_exc())
-    if raise_exception:
-        raise exception
-
-class KillProcessException(Exception):
-    pass
-
 def signal_handler(signal, frame):
     raise KillProcessException('Process killed by signal {}'.format(signal))
 
@@ -185,19 +159,44 @@ def load_config(config_filepath : str):
     else:
         raise Exception('Config file {} does not exist'.format(config_filepath))
 
-def main():
-    global unfullfilled_orders
-    order_dirpath = 'orders'
-    order_filepath = os.path.join(order_dirpath, 'orders.json')
-    if not os.path.exists(order_dirpath):
-        os.makedirs(order_dirpath)
 
+def on_order_filled_callback(order : BinanceOrder) -> None:
+    debug_tag = '[OrderFulfilledChecker Callback - on_order_filled]'
+    message_body = 'Order filled: {}\n'.format(order.to_info_string())
+    LOG_DEBUG(debug_tag, 'Sending push notification for filled order', message_body)
+    global_vars.firebaseMessager.push_notification(title="Order filled!", body=message_body)
+
+def get_order_status_callback(symbol, order_id):
+    debug_tag = '[OrderFulfilledChecker Callback - get_order_status]'
+    try:
+        return bot.get_order_status(symbol, order_id)
+    except requests.exceptions.ReadTimeout as e:
+        LOG_WARNING_AND_NOTIFY(debug_tag, 'Timeout while checking order status for order {} {}'.format(symbol, order_id))
+        return None
+    except requests.exceptions.ConnectionError as e:
+        LOG_WARNING_AND_NOTIFY(debug_tag, 'Connection error while checking order status for order {} {}'.format(symbol, order_id))
+        return None
+
+
+def main():
+    global bot, order_list_manager
     debug_tag = '[Startup]'
     dca_file_name = 'dca_investment_parameter.json'
-    dca_file_path = os.path.join('configs', dca_file_name)
+    configs_directory = 'configs'
+    dca_file_path = os.path.join(configs_directory, dca_file_name)
+
+    order_dirpath = 'orders'
+    order_filepath = os.path.join(order_dirpath, 'orders.json')
+
+    order_list_manager = OrderListManager(order_filepath)
+    order_list_manager.load_fulfilled_from_file()
+
+    order_fulfilled_checker_thread : OrderFulfilledChecker = OrderFulfilledChecker(order_list_manager,
+        on_order_filled_callback=on_order_filled_callback, get_order_status_callback=get_order_status_callback)
 
     # load config file
-    config_file = os.path.join('configs', 'config.json')
+    # TODO: convert to config class for easier access/validation
+    config_file = os.path.join(configs_directory, 'config.json')
     config = load_config(config_file)
 
     # init logger
@@ -209,7 +208,7 @@ def main():
         raise Exception('No logging options found in config file')
 
     # load environment variables
-    dotEnvPath = os.path.join('configs', '.env')
+    dotEnvPath = os.path.join(configs_directory, '.env')
     if os.path.exists(dotEnvPath):
         load_dotenv(dotEnvPath)
     else:
@@ -271,7 +270,7 @@ def main():
         LOG_DEBUG(debug_tag, 'Check interval set to {} seconds ({})'.format(check_interval, str(datetime.timedelta(seconds=check_interval))))
     else:
         LOG_INFO(debug_tag, 'No check_interval option found in config file. Using default of 30 minutes')
-
+    
     bot = TradingBot(use_testnet=USE_TESTNET)
     bot.connect()
 
@@ -291,76 +290,21 @@ def main():
         LOG_ERROR_AND_NOTIFY(debug_tag, 'Failed to load dca investment parameter file at {}'.format(dca_file_path))
 
     # store every order made, don't retrieve it from binance in case a manuel order is made
-    fullfilled_orders = load_last_orders(order_filepath)
+    order_list_manager.load_fulfilled_from_file()
 
     if global_vars.firebaseStorage is not None:
-        global_vars.firebaseStorage.set_fulfilled_orders(fullfilled_orders)
+        # TODO: add this to the firebase storage class
+        global_vars.firebaseStorage.set_fulfilled_orders(order_list_manager.fulfilled_orders())
 
     # TODO: outsource this function
-    def exists_unfullfilled_order_for_symbol(symbol : str):
-        for order in unfullfilled_orders:
+    def exists_unfulfilled_order_for_symbol(symbol : str):
+        for order in order_list_manager.unfulfilled_orders():
             if order.symbol == symbol and order.side == SIDE_BUY:
                 return True
         return False
 
-    def on_order_filled(order : BinanceOrder):
-        message_body = 'Order filled: {}\n'.format(order.orderId) + \
-                          'Symbol: {}\n'.format(order.symbol) + \
-                            'Side: {}\n'.format(order.side) + \
-                            'Price: {}\n'.format(order.price) + \
-                            'Quantity: {}\n'.format(order.origQty) + \
-                            'Type: {}\n'.format(order.type) + \
-                            'Status: {}\n'.format(order.status) + \
-                            'Money spend: {}\n'.format(Decimal(order.price) * Decimal(order.origQty))
-        LOG_DEBUG(debug_tag, 'Sending push notification for filled order', order.to_info_string())
-        global_vars.firebaseMessager.push_notification(title="Order filled!", body=message_body)
-
-    # TODO: outsource this function
-    def THREAD_check_if_orders_are_fully_filled():
-        debug_tag = '[Thread - Fullfilled Order Checker]'
-
-        # check continuously unfullfilled orders and wait for them to be fullfilled
-        try:
-            while True:
-                time.sleep(5)
-                if global_vars.stop_threads:
-                    break
-                for order in unfullfilled_orders:
-                    try:
-                        binance_order = bot.get_order_status(order.symbol, order.orderId)
-                    except requests.exceptions.ReadTimeout as e:
-                        LOG_WARNING_AND_NOTIFY(debug_tag, 'Timeout while checking order status for order {} {}'.format(order.symbol, order.orderId))
-                        continue
-                    except requests.exceptions.ConnectionError as e:
-                        LOG_WARNING_AND_NOTIFY(debug_tag, 'Connection error while checking order status for order {} {}'.format(order.symbol,order.orderId))
-                        continue
-
-                    if binance_order.status == ORDER_STATUS_FILLED:
-                        unfullfilled_orders.remove(order)
-                        fullfilled_orders.append(binance_order)
-                        LOG_INFO(debug_tag, 'Order fully filled:', binance_order)
-                        on_order_filled(binance_order)
-                        # store fullfilled orders in file
-                        with open(order_filepath, 'w') as f:
-                            orders = [o.asDict() for o in fullfilled_orders]
-                            json.dump(orders, f, indent=4, ensure_ascii=False)
-
-                        if global_vars.firebaseStorage is not None:
-                            global_vars.firebaseStorage.set_fulfilled_orders(fullfilled_orders)
-        except (KillProcessException, KeyboardInterrupt) as e:
-            # this should not happen since it is called in a seperate thread but just in case
-            LOG_CRITICAL_AND_NOTIFY(debug_tag, e)
-            LOG_CRITICAL_AND_NOTIFY(debug_tag, 'KillProcessException received, stopping thread forcefully')
-            pass
-        except Exception as e:
-            LOG_ERROR_AND_NOTIFY(debug_tag, 'Error while checking unfullfilled orders:', e)
-            LOG_ERROR_AND_NOTIFY(debug_tag, 'Order listener stopped')
-            log_and_raise_exeption(e, debug_tag)
-        LOG_DEBUG(debug_tag, 'Order listener stopped')
-
-    order_fullfill_checker_thread = threading.Thread(target=THREAD_check_if_orders_are_fully_filled)
-    LOG_DEBUG(debug_tag, 'Starting order fullfill checker thread (order_fullfill_checker_thread)')
-    order_fullfill_checker_thread.start()
+    LOG_DEBUG(debug_tag, 'Starting order fulfill checker thread (order_fulfilled_checker_thread)')
+    order_fulfilled_checker_thread.start()
 
     debug_tag = '[MainLoop]'
 
@@ -399,7 +343,9 @@ def main():
                     if now >= investment_start:
                         # get last order for symbol
                         last_order = None    
-                        for order in fullfilled_orders:
+                        
+                        # TODO: put this into OrderListManager -> get_last_order_for_symbol
+                        for order in order_list_manager.fulfilled_orders():
                             if order.symbol == symbol and order.side == SIDE_BUY:
                                 last_order = order
 
@@ -419,36 +365,36 @@ def main():
                             # check if last investment is older than interval
                             if now >= next_investment_timestamp:
                                 LOG_INFO('Last investment is older than interval of {}, invest again'.format(str(datetime.timedelta(seconds=investment_strategy.interval))))
-                                if not exists_unfullfilled_order_for_symbol(symbol):
-                                    invest_at_current_price(bot, investment_strategy)
+                                if not exists_unfulfilled_order_for_symbol(symbol):
+                                    invest_at_current_price(investment_strategy)
                                 else:
                                     LOG_INFO('Investment order is in place, wait for it to be filled')
                         else:
-                            if not exists_unfullfilled_order_for_symbol(symbol):
+                            if not exists_unfulfilled_order_for_symbol(symbol):
                                 LOG_INFO('No previous investment found, invest now')
-                                invest_at_current_price(bot, investment_strategy)
+                                invest_at_current_price(investment_strategy)
                             else:
                                 LOG_INFO('Investment order is in place, wait for it to be filled')
 
                         LOG_INFO('------------------------------------------------')
                         # print orders
                         LOG_INFO('Current open orders:')
-                        bot.print_orders(bot.get_orders(investment_strategy.symbol))
+                        order_list_manager.print_orders(bot.get_orders(investment_strategy.symbol))
 
-                        LOG_INFO('Unfullfilled orders:')
-                        bot.print_orders(unfullfilled_orders)
+                        LOG_INFO('Unfulfilled orders:')
+                        order_list_manager.print_orders(order_list_manager.unfulfilled_orders())
 
-                        LOG_INFO('Fullfilled orders:')
-                        bot.print_orders(fullfilled_orders)
+                        LOG_INFO('fulfilled orders:')
+                        order_list_manager.print_orders(order_list_manager.fulfilled_orders())
                     else:
                         LOG_INFO('Investment starts at {}'.format(investment_start.strftime('%d.%m.%Y %H:%M:%S')))
                 time.sleep(check_interval)
 
-                # notify user if there are unfullfilled orders
-                if len(unfullfilled_orders) > 0:
-                    LOG_DEBUG(debug_tag, 'Sending push notifications for unfullfilled orders')
-                    for order in unfullfilled_orders:
-                        LOG_DEBUG(debug_tag, 'Order:', order.to_info_string())
+                # notify user if there are unfulfilled orders
+                if len(order_list_manager.unfulfilled_orders()) > 0:
+                    LOG_DEBUG(debug_tag, 'Sending push notifications for unfulfilled orders')
+                    for order in order_list_manager.unfulfilled_orders():
+                        LOG_DEBUG(debug_tag, 'Unfulfilled Order:', order.to_info_string())
                         global_vars.firebaseMessager.push_notification("Unfulfilled Order {}".format(order.orderId), order.to_info_string())
 
             except KillProcessException as e:
@@ -471,25 +417,21 @@ def main():
                 raise e
     finally:
             try:
-                # store fullfilled orders in file
-                with open(order_filepath, 'w') as f:
-                    orders = [o.asDict() for o in fullfilled_orders]
-                    json.dump(orders, f, indent=4, ensure_ascii=False)
-
+                # store fulfilled orders in file
+                order_list_manager.store_orders_to_file()
                 bot.close_all()
-                global_vars.stop_threads = True
 
                 LOG_INFO("Waiting for threads to finish, this can take a few seconds...")
-                order_fullfill_checker_thread.join()
-                LOG_DEBUG('Order listener thread stopped (order_fullfill_checker_thread)')
+                order_fulfilled_checker_thread.stop_and_join()
+                LOG_DEBUG('Order listener thread stopped (order_fulfilled_checker_thread)')
                 
-                # make sure to cancel all unfullfilled orders before closing the bot
+                # make sure to cancel all unfulfilled orders before closing the bot
                 canceled = False
                 while not canceled:
                     try:
                         # TODO: Store to file and load on next start
-                        LOG_INFO('Canceling all unfullfilled orders')
-                        for order in unfullfilled_orders:
+                        LOG_INFO('Canceling all unfulfilled orders')
+                        for order in order_list_manager.unfulfilled_orders():
                             try:
                                 bot.cancel_order(order.symbol, order.orderId)
                             except BinanceAPIException as e:

@@ -74,16 +74,7 @@ class TradingBot:
     def cancel_order(self, symbol, order_id):
         self.check_connected()
         LOG_INFO(self.client.cancel_order(symbol=symbol, orderId=order_id))
-
-    def print_orders(self,orders):
-        if len(orders) > 0:
-            LOG_INFO("------------------------------------------------")
-            for order in orders:
-                LOG_INFO(order.to_info_string())
-            LOG_INFO("------------------------------------------------")
-        else:
-            LOG_INFO("NO ORDERS")
-        
+       
     def get_asset_balance(self, asset : str):
         self.check_connected()
         return Decimal(self.client.get_asset_balance(asset)['free'])
