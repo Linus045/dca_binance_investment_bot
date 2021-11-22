@@ -15,6 +15,8 @@ KillSignal=SIGTERM
 RestartSec=10
 TimeoutStopSec=10
 Restart=on-failure
+StandardOutput=syslog+console
+StandardError=syslog+console
 
 [Install]
 WantedBy=multi-user.target
