@@ -53,11 +53,14 @@ e.g. bot.log -> bot.log.2021.11.18
 
         {
             "LOGGING" : {
-                "LOG_LEVEL" : "DEBUG", // or CRITICAL, ERROR, WARNING, INFO, DEBUG
+                "LOG_LEVEL" : "DEBUG", // CRITICAL, ERROR, WARNING, INFO, DEBUG
                 "LOG_FILE" : "bot.log"
             },
-            "USE_TESTNET" : true,    // wether to use the testnet or the mainnet
-            "check_interval" : 1800  // interval in seconds to check if a new investment is needed (default: 30min)
+            "USE_TESTNET" : true,       // whether to use the testnet or the mainnet
+            "CHECK_INTERVAL" : 1800,    // interval in seconds to check if a new investment is needed (default: 30min)
+            "USE_FIREBASE" : false,     // whether to use firebase or not | will send relevant data to firestore and utilise cloud messaging to send info via the 'investment_bot_notifier' app to the user
+            "FIREBASE_PROJECT_ID" : "investment-bot-notifier" // the project id of the firebase project (only needed if USE_FIREBASE : true)
+            "SYNC_FULFILLED_ORDERS_TO_FIREBASE" : false, // whether to sync fulfilled orders to firebase or not (only needed if USE_FIREBASE : true)
         }
 
 

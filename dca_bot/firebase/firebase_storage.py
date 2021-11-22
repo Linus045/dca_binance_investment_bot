@@ -39,7 +39,7 @@ class FirebaseStorage:
         doc_ref = self.db.collection(COLLECTION_NOTIFICATION_IDS).document(android_id)
         return doc_ref.get().to_dict()
 
-    def get_all_ids(self, bot_notification_id) -> list:
+    def get_all_ids(self) -> list:
         self.__check_connection()
         users = self.db.collection(COLLECTION_NOTIFICATION_IDS).stream()
         ids = []

@@ -7,5 +7,5 @@
     "CHECK_INTERVAL" : 1800,
     "USE_FIREBASE" : false,
     "SYNC_FULFILLED_ORDERS_TO_FIREBASE" : false,
-    "FIREBASE_PROJECT_ID" : "investment-bot-notifier"
+    "FIREBASE_PROJECT_ID" : ""
 }
