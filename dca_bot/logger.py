@@ -1,6 +1,7 @@
 import os
 import logging as log
 from logging.handlers import TimedRotatingFileHandler
+import traceback
 import global_vars
 
 logger = None
@@ -61,6 +62,7 @@ def LOG_ERROR_AND_NOTIFY(*args):
 def LOG_WARNING(*args):
     logger.warning(__concat_args(*args))
 
+# TODO: Move this into a external function to keep the code clean from dependencies
 def LOG_WARNING_AND_NOTIFY(*args):
     LOG_WARNING(*args)
     if global_vars.firebaseMessager is not None:
@@ -77,3 +79,20 @@ def LOG_CRITICAL_AND_NOTIFY(*args):
     if global_vars.firebaseMessager is not None:
         global_vars.firebaseMessager.push_notification('Warning!', __concat_args(*args))
 
+def log_and_raise_exeption(e : Exception, debug_tag : str = '[Exception]', raise_exception : bool = True):
+    # try logging but if that doesnt work, try printing the exception
+    exception = e
+    excepton_info = traceback.format_exc()
+    try:
+        LOG_ERROR_AND_NOTIFY(debug_tag, e)
+        LOG_ERROR_AND_NOTIFY(debug_tag, traceback.format_exc())
+    except Exception as ex:
+        print(debug_tag, "Initial exception that was raised:")
+        print(debug_tag, e)
+        print(debug_tag, excepton_info)
+
+        print(debug_tag, "Another exception was raised during logging of the first exception:")
+        print(debug_tag, ex)
+        print(debug_tag, traceback.format_exc())
+    if raise_exception:
+        raise exception
