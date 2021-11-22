@@ -1,17 +1,16 @@
 import requests
 import time
 import os
-import threading
 import datetime
 import json
 import time
-import traceback
 import signal
 from decimal import Decimal, getcontext
 
 from binance.enums import *
 from binance.enums import ORDER_TYPE_LIMIT
 from binance.exceptions import BinanceAPIException
+from order_validator import OrderValidator
 
 from firebase.firebase_storage import FirebaseStorage
 from firebase.firebase_messager import FirebaseMessager
@@ -31,80 +30,6 @@ getcontext().prec = 8
 
 bot : TradingBot = None
 order_list_manager: OrderListManager = None
-
-def check_order_possible(amount : Decimal, price : Decimal, symbol : str):
-    symbol_info = bot.get_symbol_info(symbol)
-    filter_info = symbol_info['filters']
-
-    debug_tag = '[Order Validation]'
-    LOG_DEBUG(debug_tag, symbol, 'Filter Info: \n', filter_info)
-
-    # check if price is in filter
-    price_filter = [f for f in filter_info if f['filterType'] == 'PRICE_FILTER'][0]
-    if price_filter is None:
-        LOG_ERROR_AND_NOTIFY(debug_tag, 'No price filter found for symbol {}'.format(symbol))
-        return False
-    else:
-        if price < Decimal(price_filter['minPrice']) or price > Decimal(price_filter['maxPrice']):
-            LOG_ERROR_AND_NOTIFY(debug_tag, 'Price {} is not in price filter for symbol {} [{}-{}]'.format(price, symbol, price_filter['minPrice'], price_filter['maxPrice']))
-            return False
-        
-        # check if price matches step size
-        price_step_size = Decimal(price_filter['tickSize'])
-        if price_step_size != 0:
-            correct_price = round(price / price_step_size) * price_step_size
-            LOG_DEBUG(debug_tag, 'Rounded price {} with step size {} to: {}'.format(price, price_step_size, correct_price))
-            if price != correct_price:
-                LOG_ERROR_AND_NOTIFY(debug_tag, 'Price {} does not match price filters step size for symbol {} of {}'.format(price, symbol, price_step_size))
-                return False
-            else:
-                LOG_DEBUG(debug_tag, 'Requested order price {} matches rounded price {} with stepsize of {} for symbol {}'.format(price, correct_price, price_step_size, symbol))
-
-    # check if amount/quantity is in filter
-    lot_filter = [f for f in filter_info if f['filterType'] == 'LOT_SIZE'][0]
-    if lot_filter is None:
-        LOG_ERROR_AND_NOTIFY(debug_tag, 'No lot filter found for symbol {}'.format(symbol))
-        return False
-    else:
-        if amount < Decimal(lot_filter['minQty']) or amount > Decimal(lot_filter['maxQty']):
-            LOG_ERROR_AND_NOTIFY(debug_tag, 'Amount {} is not in amount filter for symbol {} [{}-{}]'.format(amount, symbol, lot_filter['minQty'], lot_filter['maxQty']))
-            return False
-        
-        # check if amount matches lot step size
-        lot_step_size = Decimal(lot_filter['stepSize'])
-        if lot_step_size != 0:
-            correct_amount = round(amount / lot_step_size) * lot_step_size
-            LOG_DEBUG(debug_tag, 'Rounded amount {} with lot step size {} to: {}'.format(amount, lot_step_size, correct_amount))
-            if amount != correct_amount:
-                LOG_ERROR_AND_NOTIFY(debug_tag, 'Amount {} does not match amount filters step size for symbol {} of {}'.format(amount, symbol, lot_step_size))
-                return False
-            else:
-                LOG_DEBUG(debug_tag, 'Requested amount {} matches rounded amount {} with step size of {} for symbol {}'.format(amount, correct_amount, lot_step_size, symbol))
-        notion_filter = [f for f in filter_info if f['filterType'] == 'MIN_NOTIONAL'][0]
-        if notion_filter is None:
-            LOG_ERROR_AND_NOTIFY(debug_tag, 'No notion filter found for symbol {}'.format(symbol))
-            return False
-        else:
-            # check if notional is bigger or equal to min notional
-            notion = amount * price
-            min_notional = Decimal(notion_filter['minNotional'])
-            if notion < min_notional:
-                LOG_ERROR_AND_NOTIFY(debug_tag, 'Notion {} is smaller than min notional {} for symbol {}'.format(notion, min_notional, symbol))
-                return False
-    
-    # check if account has enough balance
-    quote_asset = symbol_info['quoteAsset']
-    quote_balance = bot.get_asset_balance(quote_asset)
-    if quote_balance is None:
-        LOG_ERROR_AND_NOTIFY(debug_tag, 'No balance found for {}'.format(quote_asset))
-        return False
-    else:
-        if quote_balance < amount:
-            LOG_ERROR_AND_NOTIFY(debug_tag, 'Not enough {} in account to complete order'.format(quote_asset))
-            return False
-    
-    return True
-    
 
 def invest_at_current_price(investment_strategy : DCAInvestmentParameter):
     price = bot.get_avg_price(investment_strategy.symbol)
@@ -128,7 +53,9 @@ def invest_at_current_price(investment_strategy : DCAInvestmentParameter):
     LOG_INFO('Defined Investment per interval ({}): {}'.format(str(datetime.timedelta(seconds=investment_strategy.interval)), investment_amount))
     LOG_INFO('Investing {} at price {} for {}'.format(amount, price, investment_strategy.symbol))
     try:
-        if check_order_possible(amount, price, investment_strategy.symbol):
+        symbol_info = bot.get_symbol_info(investment_strategy.symbol)
+        quote_balance = bot.get_asset_balance(symbol_info['quoteAsset'])
+        if OrderValidator.check_order_possible(symbol_info, quote_balance, investment_strategy.symbol, amount, price):
             new_order = bot.create_limit_buy_order(investment_strategy.symbol, price, amount)
             order_list_manager.add_new_order(new_order)
             LOG_INFO('New Investment order created:', new_order)
