@@ -5,7 +5,7 @@ To Install the systemd service:
 # 1 . Copy the example file:
 ```
 copy:
-cp dca_traiding_bot.service.example dca_traiding_bot.service
+cp dca_trading_bot.service.example dca_trading_bot.service
 ```
 
 # 2. Set the corrct user/group:
@@ -15,9 +15,9 @@ This is the user/group that will run the script.
 # 3. Set the correct path to the working directory:
 Set the path for 'WorkingDirectory' to the directory where the `main.py` script is located.
 
-e.g. with the `main.py` script at `/home/pi/dca_traiding_bot/main.py`
+e.g. with the `main.py` script at `/home/pi/dca_trading_bot/main.py`
 ```
-WorkingDirectory=/home/pi/dca_traiding_bot
+WorkingDirectory=/home/pi/dca_trading_bot
 ``` 
 
 # 4. Set the correct path for ExecStart:
@@ -56,15 +56,15 @@ WantedBy=multi-user.target
 # 5 Copy or move script to systemd service folder:
 ```
 copy:
-cp dca_traiding_bot.service /etc/systemd/system/dca_traiding_bot.service
+cp dca_trading_bot.service /etc/systemd/system/dca_trading_bot.service
 
 move:
-sudo mv dca_traiding_bot.service /etc/systemd/system/dca_traiding_bot.service
+sudo mv dca_trading_bot.service /etc/systemd/system/dca_trading_bot.service
 ```
 
 # 6. Enable the service:
 ```
-sudo systemctl enable dca_traiding_bot.service.service
+sudo systemctl enable dca_trading_bot.service.service
 ```
 
 Service fails if the script fails 3 times in a row (in 180 seconds).
@@ -75,15 +75,15 @@ Service fails if the script fails 3 times in a row (in 180 seconds).
 # Troubleshooting/Debugging:
 To see the status of the service:
 ```
-sudo systemctl status dca_traiding_bot.service
+sudo systemctl status dca_trading_bot.service
 ```
 
 or to see the logs:
 ```
-sudo journalctl -u dca_traiding_bot.service
+sudo journalctl -u dca_trading_bot.service
 ```
 
 To reset the service on failure (if the service fails to start 3 times in a row):
 ```
-sudo systemctl reset-failed dca_traiding_bot.service
+sudo systemctl reset-failed dca_trading_bot.service
 ```
