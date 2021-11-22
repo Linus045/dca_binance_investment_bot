@@ -312,7 +312,7 @@ def main():
                             'Type: {}\n'.format(order.type) + \
                             'Status: {}\n'.format(order.status) + \
                             'Money spend: {}\n'.format(Decimal(order.price) * Decimal(order.origQty))
-        LOG_DEBUG(debug_tag, 'Sending push notification for filled order', order.to_info_string)
+        LOG_DEBUG(debug_tag, 'Sending push notification for filled order', order.to_info_string())
         global_vars.firebaseMessager.push_notification(title="Order filled!", body=message_body)
 
     # TODO: outsource this function
