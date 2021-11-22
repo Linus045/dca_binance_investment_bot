@@ -126,13 +126,17 @@ class TradingBot:
                 LOG_ERROR_AND_NOTIFY(self.debug_tag, 'Investment not possible')
         except BinanceAPIException as e:
             LOG_ERROR_AND_NOTIFY(self.debug_tag, 'Failed to create investment order:', e)
-            # TODO: Move this to a separate function (event handler)
+
             message_body = 'Failed to create investment order:\n' + \
                             'Symbol: {}\n'.format(symbol) + \
                             'Amount: {}\n'.format(amount) + \
                             'Price: {}\n'.format(price) + \
                             'Error: {}\n'.format(e)
             LOG_DEBUG(self.debug_tag, 'Sending push notification failed order:', message_body)
-            global_vars.firebaseMessager.push_notification(title="Failed to create investment order", body=message_body)
+
+            # TODO: Move this to a separate function (event handler)
+            if global_vars.firebaseMessager is not None:
+                LOG_DEBUG(self.debug_tag, 'Sending push notification failed order:', message_body)
+                global_vars.firebaseMessager.push_notification(title="Failed to create investment order", body=message_body)
         
         return None

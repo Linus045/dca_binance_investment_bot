@@ -1,3 +1,4 @@
+from binance import exceptions
 import requests
 import time
 import os
@@ -10,9 +11,7 @@ from decimal import getcontext
 from binance.enums import *
 from binance.enums import ORDER_TYPE_LIMIT
 from binance.exceptions import BinanceAPIException
-
-from firebase.firebase_storage import FirebaseStorage
-from firebase.firebase_messager import FirebaseMessager
+from config_manager import ConfigManager
 
 import global_vars
 from dotenv import load_dotenv
@@ -30,22 +29,17 @@ getcontext().prec = 8
 
 bot : TradingBot = None
 order_list_manager: OrderListManager = None
+config_manager : ConfigManager = ConfigManager()
 
 def signal_handler(signal, frame):
     raise KillProcessException('Process killed by signal {}'.format(signal))
 
-def load_config(config_filepath : str):
-    if os.path.exists(config_filepath):
-        with open(config_filepath, 'r') as config_file:
-            return json.load(config_file)
-    else:
-        raise Exception('Config file {} does not exist'.format(config_filepath))
-
 def on_order_filled_callback(order : BinanceOrder) -> None:
     debug_tag = '[OrderFulfilledChecker Callback - on_order_filled]'
     message_body = 'Order filled: {}\n'.format(order.to_info_string())
-    LOG_DEBUG(debug_tag, 'Sending push notification for filled order', message_body)
-    global_vars.firebaseMessager.push_notification(title="Order filled!", body=message_body)
+    if global_vars.firebaseMessager is not None:
+        LOG_DEBUG(debug_tag, 'Sending push notification for filled order', message_body)
+        global_vars.firebaseMessager.push_notification(title="Order filled!", body=message_body)
 
 def get_order_status_callback(symbol, order_id):
     debug_tag = '[OrderFulfilledChecker Callback - get_order_status]'
@@ -72,9 +66,10 @@ def invest(investment_strategy : DCAInvestmentParameter) -> None:
         LOG_INFO(debug_tag, 'New Investment order created:', new_order)
 
         # TODO: Move this to a separate function (event handler)
-        message_body = 'New Investment order created:\n' +  new_order.to_info_string()
-        LOG_DEBUG(debug_tag, 'Sending push notification for created order:', new_order.to_info_string())
-        global_vars.firebaseMessager.push_notification(title="New order created", body=message_body)
+        if global_vars.firebaseMessager is not None:
+            message_body = 'New Investment order created:\n' +  new_order.to_info_string()
+            LOG_DEBUG(debug_tag, 'Sending push notification for created order:', new_order.to_info_string())
+            global_vars.firebaseMessager.push_notification(title="New order created", body=message_body)
 
 def main():
     global bot, order_list_manager
@@ -86,17 +81,10 @@ def main():
     order_fulfilled_checker_thread : OrderFulfilledChecker = OrderFulfilledChecker(order_list_manager,
         on_order_filled_callback=on_order_filled_callback, get_order_status_callback=get_order_status_callback)
 
-    # load config file
-    # TODO: convert to config class for easier access/validation
-    config = load_config(Paths.config_filepath)
-
-    # init logger
-    if 'LOGGING' in config:
-        log_options = config['LOGGING']
-        init_logger(log_options)
-    else:
-        print(debug_tag, 'No logging options found in config file')
-        raise Exception('No logging options found in config file')
+    config_manager.load_and_validate_config()
+    init_logger(config_manager.log_level, config_manager.log_file)
+    LOG_INFO(debug_tag, "Logger initialized")
+    LOG_INFO(debug_tag, "Config file loaded")
 
     # load environment variables
     dotEnvPath = os.path.join(Paths.config_directory, '.env')
@@ -106,61 +94,44 @@ def main():
         LOG_WARNING_AND_NOTIFY(debug_tag, "No .env file found at {}", dotEnvPath)
 
     ids = []
-    if 'SYNC_FULFILLED_ORDERS_TO_FIREBASE' in config:
-        global_vars.sync_fulfilled_orders_to_firebase = config['SYNC_FULFILLED_ORDERS_TO_FIREBASE']
-    else:
-        LOG_INFO(debug_tag, 'No SYNC_FULFILLED_ORDERS_TO_FIREBASE option found in config file, using default: {}'.format(global_vars.sync_fulfilled_orders_to_firebase))
+    global_vars.sync_fulfilled_orders_to_firebase = config_manager.sync_fulfilled_orders_to_firebase
 
-    if 'firebase_project_id' in config:
-        firebase_project_id = config['firebase_project_id']
+    if config_manager.use_firebase:
+        from firebase.firebase_storage import FirebaseStorage
+        from firebase.firebase_messager import FirebaseMessager
+
+        LOG_INFO(debug_tag, 'Using Firebase')
+        firebase_project_id = config_manager.firebase_project_id
         global_vars.firebaseStorage = FirebaseStorage(firebase_project_id)
         global_vars.firebaseStorage.connect()
 
         # retrieve user ids from firebase
-        if 'bot_notification_id' in config:
-            bot_notification_id = config['bot_notification_id']
-            
-            LOG_INFO(debug_tag, 'Retrieving all users to notify from firebase')
-            ids = global_vars.firebaseStorage.get_all_ids(bot_notification_id)
-            if len(ids) == 0:
-                LOG_WARNING(debug_tag, 'No users found to notify')
-            else:
-                LOG_INFO(debug_tag, '{} users found to notify'.format(len(ids)))
+        LOG_INFO(debug_tag, 'Retrieving all users to notify from firebase')
+        ids = global_vars.firebaseStorage.get_all_ids()
+        if len(ids) == 0:
+            LOG_WARNING(debug_tag, 'No users found to notify')
         else:
-            LOG_INFO(debug_tag, 'No firebase bot_notification_id found in config file')
+            LOG_INFO(debug_tag, '{} users found to notify'.format(len(ids)))
+
+        global_vars.firebaseMessager = FirebaseMessager()
+        global_vars.firebaseMessager.set_ids(ids)
     else:
-        LOG_INFO(debug_tag, 'No firebase project id found in config file')
+        LOG_INFO(debug_tag, 'Not using firebase')
 
-    global_vars.firebaseMessager = FirebaseMessager()
-    global_vars.firebaseMessager.set_ids(ids)
 
-    LOG_DEBUG(debug_tag, 'Sending push notification that bot is starting')
-    global_vars.firebaseMessager.push_notification(title="DCA Bot starting", body="Bot started at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
 
-    USE_TESTNET = True
-    # init trading bot  
-    if 'USE_TESTNET' in config:
-        USE_TESTNET = config['USE_TESTNET']
-    else:
-        LOG_ERROR_AND_NOTIFY(debug_tag, 'No USE_TESTNET option found in config file')
-        raise Exception('No USE_TESTNET option found in config file')
+    if global_vars.firebaseMessager is not None:
+        LOG_DEBUG(debug_tag, 'Sending push notification that bot is starting')
+        global_vars.firebaseMessager.push_notification(title="DCA Bot starting", body="Bot started at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
 
-    check_interval = 60 * 30 # 30 minutes
-    # retrieve update interval or use default
-    if 'check_interval' in config:
-        try:
-            check_interval = int(config['check_interval'])
-        except ValueError:
-            LOG_ERROR_AND_NOTIFY(debug_tag, 'Check interval in config file is not a number')
-            raise Exception('Check interval in config file is not a number')
-        
-        # check_interval must be at least 30 seconds
-        if check_interval < 30:
-            LOG_ERROR_AND_NOTIFY(debug_tag, 'Check interval in config file is too small. (>=30 seconds)')
-            raise Exception('Check interval in config file is too small. (>=30 seconds)')
-        LOG_DEBUG(debug_tag, 'Check interval set to {} seconds ({})'.format(check_interval, str(datetime.timedelta(seconds=check_interval))))
-    else:
-        LOG_INFO(debug_tag, 'No check_interval option found in config file. Using default of 30 minutes')
+    USE_TESTNET = config_manager.use_testnet
+    check_interval = config_manager.check_interval
+    
+    # check_interval must be at least 30 seconds
+    if check_interval < 30:
+        LOG_ERROR_AND_NOTIFY(debug_tag, 'Check interval in config file is too small. (>=30 seconds)')
+        raise Exception('Check interval in config file is too small. (>=30 seconds)')
+    LOG_DEBUG(debug_tag, 'Check interval set to {} seconds ({})'.format(check_interval, str(datetime.timedelta(seconds=check_interval))))
     
     bot = TradingBot(use_testnet=USE_TESTNET)
     bot.connect()
@@ -286,11 +257,12 @@ def main():
                 time.sleep(check_interval)
 
                 # notify user if there are unfulfilled orders
-                if len(order_list_manager.unfulfilled_orders()) > 0:
-                    LOG_DEBUG(debug_tag, 'Sending push notifications for unfulfilled orders')
-                    for order in order_list_manager.unfulfilled_orders():
-                        LOG_DEBUG(debug_tag, 'Unfulfilled Order:', order.to_info_string())
-                        global_vars.firebaseMessager.push_notification("Unfulfilled Order {}".format(order.orderId), order.to_info_string())
+                if global_vars.firebaseMessager is not None:
+                    if len(order_list_manager.unfulfilled_orders()) > 0:
+                        LOG_DEBUG(debug_tag, 'Sending push notifications for unfulfilled orders')
+                        for order in order_list_manager.unfulfilled_orders():
+                                LOG_DEBUG(debug_tag, 'Unfulfilled Order:', order.to_info_string())
+                                global_vars.firebaseMessager.push_notification("Unfulfilled Order {}".format(order.orderId), order.to_info_string())
 
             except KillProcessException as e:
                 LOG_INFO(debug_tag, 'Process killed from outside')
@@ -311,44 +283,48 @@ def main():
                 running = False
                 raise e
     finally:
-            try:
-                # store fulfilled orders in file
-                order_list_manager.store_orders_to_file()
-                bot.close_all()
+        try:
+            # store fulfilled orders in file
+            order_list_manager.store_orders_to_file()
+            bot.close_all()
 
-                LOG_INFO("Waiting for threads to finish, this can take a few seconds...")
-                order_fulfilled_checker_thread.stop_and_join()
-                LOG_DEBUG('Order listener thread stopped (order_fulfilled_checker_thread)')
-                
-                # make sure to cancel all unfulfilled orders before closing the bot
-                canceled = False
-                while not canceled:
-                    try:
-                        # TODO: Store to file and load on next start
-                        LOG_INFO('Canceling all unfulfilled orders')
-                        for order in order_list_manager.unfulfilled_orders():
-                            try:
-                                bot.cancel_order(order.symbol, order.orderId)
-                            except BinanceAPIException as e:
-                                LOG_ERROR_AND_NOTIFY('Order {} could not be canceled'.format(order.orderId))
-                                LOG_ERROR_AND_NOTIFY(e)
-                                continue
-                        canceled = True
-                    except requests.exceptions.ReadTimeout:
-                        LOG_WARNING("[Deleting all current orders] No Internet connection... retrying...")
-                        time.sleep(15)
-                    except requests.exceptions.ConnectionError as e:
-                        LOG_WARNING("[Deleting all current orders] No Internet connection... retrying...")
-                        time.sleep(15)
+            LOG_INFO("Waiting for threads to finish, this can take a few seconds...")
+            order_fulfilled_checker_thread.stop_and_join()
+            LOG_DEBUG('Order listener thread stopped (order_fulfilled_checker_thread)')
+            
+            # make sure to cancel all unfulfilled orders before closing the bot
+            canceled = False
+            while not canceled:
+                try:
+                    # TODO: Store to file and load on next start
+                    LOG_INFO('Canceling all unfulfilled orders')
+                    for order in order_list_manager.unfulfilled_orders():
+                        try:
+                            bot.cancel_order(order.symbol, order.orderId)
+                        except BinanceAPIException as e:
+                            LOG_ERROR_AND_NOTIFY('Order {} could not be canceled'.format(order.orderId))
+                            LOG_ERROR_AND_NOTIFY(e)
+                            continue
+                    canceled = True
+                except requests.exceptions.ReadTimeout:
+                    LOG_WARNING("[Deleting all current orders] No Internet connection... retrying...")
+                    time.sleep(15)
+                except requests.exceptions.ConnectionError as e:
+                    LOG_WARNING("[Deleting all current orders] No Internet connection... retrying...")
+                    time.sleep(15)
 
-                LOG_INFO("Process exited")
+            LOG_INFO("Process exited")
+            if global_vars.firebaseMessager is not None:
                 LOG_DEBUG(debug_tag, 'Sending push notification that bot shut down')
                 global_vars.firebaseMessager.push_notification(title="Bot shut down", body="Bot shut down at: {}".format(datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')))
-            except KillProcessException:
-                LOG_CRITICAL_AND_NOTIFY(debug_tag, "Process killed from outside again... just wait a god damn moment!")
-            except Exception as e:
-                log_and_raise_exeption(e)
+        except KillProcessException:
+            LOG_CRITICAL_AND_NOTIFY(debug_tag, "Process killed from outside again... just wait a god damn moment!")
+        except Exception as e:
+            log_and_raise_exeption(e)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        log_and_raise_exeption(e, raise_exception=True)
 
