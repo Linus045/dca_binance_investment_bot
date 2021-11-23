@@ -1,12 +1,18 @@
-import logging as log
 import os
 import traceback
+from logging import basicConfig
+from logging import ERROR
+from logging import getLevelName
+from logging import getLogger
+from logging import Logger
+from logging import StreamHandler
 from logging.handlers import TimedRotatingFileHandler
 
 import dca_investment_bot.global_vars as global_vars
 from dca_investment_bot.paths import Paths
 
-logger: log.Logger = None  # type: ignore
+# TODO: Figure out why Optional[Logger] doesnt work here with mypy
+logger: Logger = None  # type: ignore
 logger_initialized = False
 
 
@@ -27,19 +33,19 @@ def init_logger(log_level: str, log_file: str):
         os.mkdir(log_dir)
 
     file_handler = TimedRotatingFileHandler(log_path, when="midnight")
-    log.basicConfig(
+    basicConfig(
         format="%(asctime)s %(levelname)s: %(message)s",
-        handlers=[file_handler, log.StreamHandler()],
+        handlers=[file_handler, StreamHandler()],
     )
-    logger = log.getLogger(__name__)
+    logger = getLogger(__name__)
 
     # make sure log_level is valid ( DEBUG, INFO, WARNING, ERROR, CRITICAL)
     if log_level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-        logger.log(log.ERROR, "Invalid log level specified. Defaulting to INFO")
+        logger.log(ERROR, "Invalid log level specified. Defaulting to INFO")
         LOG_ERROR(f"ERROR: Invalid log level: {log_level}", "Defaulting to INFO")
-        log_level = log.getLevelName("INFO")
+        log_level = getLevelName("INFO")
 
-    level = log.getLevelName(log_level)
+    level = getLevelName(log_level)
     logger.setLevel(level)
     logger_initialized = True
 

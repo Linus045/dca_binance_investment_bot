@@ -2,6 +2,8 @@ import json
 import os
 import typing
 from typing import Any
+from typing import List
+from typing import Union
 
 from dca_investment_bot.logger import LOG_CRITICAL
 from dca_investment_bot.logger import LOG_ERROR
@@ -39,21 +41,21 @@ class ConfigManager:
 
     def __init__(self) -> None:
         self.debug_tag = "[ConfigManager]"
-        self.log_level: Any = None
-        self.log_file: Any = None
-        self.use_testnet: Any = None
-        self.check_interval: Any = None
-        self.sync_fulfilled_orders_to_firebase: Any = None
-        self.use_firebase: Any = None
-        self.firebase_project_id: Any = None
+        self.log_level: Union[str, None] = None
+        self.log_file: Union[str, None] = None
+        self.use_testnet: Union[bool, None] = None
+        self.check_interval: Union[int, None] = None
+        self.sync_fulfilled_orders_to_firebase: Union[bool, None] = None
+        self.use_firebase: Union[bool, None] = None
+        self.firebase_project_id: Union[str, None] = None
 
     def __validate_value(
         self,
-        data: typing.Dict,
+        data: typing.Dict[str, typing.Any],
         key: str,
         expected_type: type,
         default_value: Any,
-        valid_values: typing.List = None,
+        valid_values: Union[List[Any], None] = None,
         valid_filepath: bool = False,
     ) -> Any:
         """
@@ -89,7 +91,7 @@ class ConfigManager:
             value = default_value
         return value
 
-    def get_value_or_default(self, data: typing.Dict, key: str, default_value: Any) -> Any:
+    def get_value_or_default(self, data: typing.Dict[str, Any], key: str, default_value: Any) -> Any:
         """
         Returns the value for the given key in the config file.
         If the key is not found, the default value is returned.

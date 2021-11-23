@@ -4,6 +4,7 @@ import os
 import signal
 import time
 from decimal import getcontext
+from typing import Union
 
 from binance.enums import SIDE_BUY
 from binance.exceptions import BinanceAPIException
@@ -193,7 +194,7 @@ def main():
         global_vars.firebaseStorage.set_fulfilled_orders(order_list_manager.fulfilled_orders())
 
     # TODO: outsource this function
-    def exists_unfulfilled_order_for_symbol(symbol: str):
+    def exists_unfulfilled_order_for_symbol(symbol: str) -> bool:
         for order in order_list_manager.unfulfilled_orders():
             if order.symbol == symbol and order.side == SIDE_BUY:
                 return True
@@ -244,7 +245,7 @@ def main():
                     )
                     if now >= investment_start:
                         # get last order for symbol
-                        last_order = None
+                        last_order: Union[BinanceOrder, None] = None
 
                         # TODO: put this into OrderListManager
                         # -> get_last_order_for_symbol

@@ -1,5 +1,6 @@
 import datetime
 import time
+from typing import Optional
 
 from dca_investment_bot.logger import LOG_CRITICAL_AND_NOTIFY
 
@@ -27,11 +28,11 @@ class DCAInvestmentParameter:
     """
 
     def __init__(self, parameter_object):
-        self.symbol = None
-        self.investment_amount_quoteasset = None
-        self.interval = None
-        self.investment_time = None
-        self.start_date = None
+        self.symbol: Optional[str] = None
+        self.investment_amount_quoteasset: Optional[str] = None
+        self.interval: Optional[str] = None
+        self.investment_time: Optional[str] = None
+        self.start_date: Optional[str] = None
         self.load_from_json(parameter_object)
 
     def parse_interval_to_seconds(self, interval):

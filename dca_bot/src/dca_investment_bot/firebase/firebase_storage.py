@@ -1,11 +1,12 @@
 import datetime
-import typing
+from typing import List
 
-import firebase_admin
 from firebase_admin import credentials
-from firebase_admin import firestore
+from firebase_admin import firestore as fire
+from firebase_admin import initialize_app
 
 import dca_investment_bot.global_vars as global_vars
+from dca_investment_bot.binance_order import BinanceOrder
 from dca_investment_bot.logger import LOG_DEBUG
 
 COLLECTION_NOTIFICATION_IDS = "notification_ids"
@@ -21,7 +22,7 @@ class FirebaseStorage:
         # Use the application default credentials
         cred = credentials.ApplicationDefault()
 
-        firebase_admin.initialize_app(
+        initialize_app(
             cred,
             {
                 "projectId": project_id,
@@ -29,10 +30,10 @@ class FirebaseStorage:
         )
 
         self.connected = False
-        self.db: firestore.Client = None
+        self.db: fire.firestore.Client = None
 
     def connect(self):
-        self.db = firestore.client()
+        self.db = fire.client()
         self.connected = True
 
     def __check_connection(self):
@@ -44,7 +45,7 @@ class FirebaseStorage:
         doc_ref = self.db.collection(COLLECTION_NOTIFICATION_IDS).document(android_id)
         return str(doc_ref.get().to_dict()["messaging_token"])
 
-    def get_all_ids(self) -> typing.List:
+    def get_all_ids(self) -> List[str]:
         self.__check_connection()
         users = self.db.collection(COLLECTION_NOTIFICATION_IDS).stream()
         ids = []
@@ -52,7 +53,7 @@ class FirebaseStorage:
             ids.append(user.to_dict()["messaging_token"])
         return ids
 
-    def set_fulfilled_orders(self, orders: typing.List) -> None:
+    def set_fulfilled_orders(self, orders: List[BinanceOrder]) -> None:
         self.__check_connection()
 
         if not global_vars.sync_fulfilled_orders_to_firebase:

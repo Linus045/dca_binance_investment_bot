@@ -1,5 +1,9 @@
-import typing
 from decimal import Decimal
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 from dca_investment_bot.logger import LOG_DEBUG
 from dca_investment_bot.logger import LOG_ERROR_AND_NOTIFY
@@ -15,7 +19,7 @@ class OrderValidator:
 
     @staticmethod
     def check_order_possible(
-        symbol_info: typing.Dict,
+        symbol_info: Dict[str, Any],
         quote_balance: Decimal,
         symbol: str,
         amount: Decimal,
@@ -63,8 +67,8 @@ class OrderValidator:
         return True
 
     @staticmethod
-    def __price_is_in_filter(symbol_filter_info: typing.List, symbol: str, price: Decimal) -> bool:
-        price_filter: typing.Dict = None
+    def __price_is_in_filter(symbol_filter_info: List[Dict[str, str]], symbol: str, price: Decimal) -> bool:
+        price_filter: Union[Dict[str, str], None] = None
         for f in symbol_filter_info:
             if "filterType" in f and f["filterType"] == "PRICE_FILTER":
                 price_filter = f
@@ -117,8 +121,11 @@ class OrderValidator:
         return True
 
     @staticmethod
-    def __amount_is_in_filter(symbol_filter_info: typing.List, symbol: str, amount: Decimal, price: Decimal) -> bool:
-        lot_filter: typing.Dict = None
+    def __amount_is_in_filter(
+        symbol_filter_info: List[Dict[str, str]], symbol: str, amount: Decimal, price: Decimal
+    ) -> bool:
+
+        lot_filter: Optional[Dict[str, str]] = None
         for f in symbol_filter_info:
             if "filterType" in f and f["filterType"] == "LOT_SIZE":
                 lot_filter = f
@@ -166,7 +173,7 @@ class OrderValidator:
                         ),
                     )
 
-            notion_filter: typing.Dict = None
+            notion_filter: Union[Dict[str, str], None] = None
             for f in symbol_filter_info:
                 if "filterType" in f and f["filterType"] == "MIN_NOTIONAL":
                     notion_filter = f

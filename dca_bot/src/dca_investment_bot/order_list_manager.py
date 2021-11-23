@@ -14,8 +14,8 @@ Reads them from a file, and writes them to a file.
 class OrderListManager:
     def __init__(self, order_filepath: str) -> None:
         self._debug_tag = "[OrderListManager]"
-        self._unfulfilled_orders: typing.List = []
-        self._fulfilled_orders: typing.List = []
+        self._unfulfilled_orders: typing.List[BinanceOrder] = []
+        self._fulfilled_orders: typing.List[BinanceOrder] = []
         self._order_filepath = order_filepath
         self.__create_path()
 
@@ -42,10 +42,10 @@ class OrderListManager:
         if not os.path.exists(self._order_filepath):
             os.makedirs(self._order_filepath)
 
-    def unfulfilled_orders(self) -> typing.List:
+    def unfulfilled_orders(self) -> typing.List[BinanceOrder]:
         return self._unfulfilled_orders
 
-    def fulfilled_orders(self) -> typing.List:
+    def fulfilled_orders(self) -> typing.List[BinanceOrder]:
         return self._fulfilled_orders
 
     def add_new_order(self, new_order: BinanceOrder) -> None:
@@ -54,7 +54,7 @@ class OrderListManager:
         """
         self._unfulfilled_orders.append(new_order)
 
-    def print_orders(self, orders: typing.List) -> None:
+    def print_orders(self, orders: typing.List[BinanceOrder]) -> None:
         """
         Prints the orders.
         """

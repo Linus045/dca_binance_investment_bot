@@ -16,9 +16,9 @@ class FirebaseMessager:
         self.TAG = "FirebaseMessager"
         self.key = os.environ.get("FIREBASE_SERVER_KEY")
         self.push_service = FCMNotification(api_key=self.key)
-        self.ids: typing.List = []
+        self.ids: typing.List[str] = []
 
-    def set_ids(self, ids: typing.List) -> None:
+    def set_ids(self, ids: typing.List[str]) -> None:
         self.ids = ids
 
     def push_notification(self, title: str, body: str) -> None:
