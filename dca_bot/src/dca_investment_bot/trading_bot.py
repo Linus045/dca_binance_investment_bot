@@ -1,19 +1,18 @@
 import time
 import os
 import requests
-import datetime
 from decimal import Decimal
 
 from binance import Client
-from binance.enums import *
+from binance.enums import SIDE_BUY, ORDER_TYPE_LIMIT, TIME_IN_FORCE_GTC
 from binance.exceptions import BinanceAPIException
 
-from binance_order import BinanceOrder
+from dca_investment_bot.binance_order import BinanceOrder
 
 #TODO: Remove LOG_INFO calls from this file or convert to LOG_DEBUG.
-from logger import LOG_DEBUG, LOG_ERROR_AND_NOTIFY, LOG_INFO, LOG_WARNING
-from order_validator import OrderValidator
-import global_vars
+from dca_investment_bot.logger import LOG_DEBUG, LOG_ERROR_AND_NOTIFY, LOG_INFO, LOG_WARNING
+from dca_investment_bot.order_validator import OrderValidator
+import dca_investment_bot.global_vars as global_vars
 
 class TradingBot:
     def __init__(self, use_testnet=True):

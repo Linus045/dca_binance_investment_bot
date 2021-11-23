@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "main.py",
-            "cwd": "${workspaceFolder}/dca_bot",
+            "cwd": "${workspaceFolder}/dca_bot/src/dca_investment_bot",
             "console": "integratedTerminal"
         }
     ]

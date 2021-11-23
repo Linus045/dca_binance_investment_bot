@@ -1,7 +1,7 @@
 import time
 import datetime
 
-from logger import LOG_CRITICAL_AND_NOTIFY
+from dca_investment_bot.logger import LOG_CRITICAL_AND_NOTIFY
 
 class UnknownIntervalException(Exception):
     pass

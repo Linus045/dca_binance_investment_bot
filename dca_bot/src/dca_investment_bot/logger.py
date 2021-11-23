@@ -2,11 +2,11 @@ import os
 import logging as log
 from logging.handlers import TimedRotatingFileHandler
 import traceback
-import global_vars
 
-from paths import Paths
+import dca_investment_bot.global_vars as global_vars
+from dca_investment_bot.paths import Paths
 
-logger = None
+logger : log.Logger = None
 logger_initialized = False
 
 def init_logger(log_level : str, log_file : str):

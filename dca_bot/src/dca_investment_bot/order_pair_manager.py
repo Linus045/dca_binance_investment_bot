@@ -1,7 +1,7 @@
 import os
 import json
 
-from binance_order import BinanceOrder
+from dca_investment_bot.binance_order import BinanceOrder
 
 ORDER_PAIR_DIRECTORY = 'order_pairs'
 

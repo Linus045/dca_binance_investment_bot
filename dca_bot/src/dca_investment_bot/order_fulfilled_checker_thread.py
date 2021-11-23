@@ -1,12 +1,11 @@
 import time
 from binance.enums import ORDER_STATUS_FILLED
 import threading
-import json
-from order_list_manager import OrderListManager
 
-import global_vars
-from exceptions import NoCallbackDefinedException, KillProcessException
-from logger import log_and_raise_exeption, LOG_DEBUG, LOG_INFO, LOG_WARNING_AND_NOTIFY, LOG_ERROR_AND_NOTIFY, LOG_CRITICAL_AND_NOTIFY
+from dca_investment_bot.order_list_manager import OrderListManager
+import dca_investment_bot.global_vars as global_vars
+from dca_investment_bot.exceptions import NoCallbackDefinedException, KillProcessException
+from dca_investment_bot.logger import log_and_raise_exeption, LOG_DEBUG, LOG_INFO, LOG_WARNING_AND_NOTIFY, LOG_ERROR_AND_NOTIFY, LOG_CRITICAL_AND_NOTIFY
 
 # TODO: maybe implement mutex using threading.Lock()
 # mutex = threading.Lock()

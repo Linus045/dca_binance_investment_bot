@@ -1,8 +1,8 @@
 import os
 import json
 
-from logger import LOG_DEBUG, LOG_INFO, LOG_WARNING_AND_NOTIFY, LOG_ERROR_AND_NOTIFY, LOG_CRITICAL_AND_NOTIFY
-from binance_order import BinanceOrder
+from dca_investment_bot.logger import LOG_DEBUG, LOG_INFO, LOG_WARNING_AND_NOTIFY, LOG_ERROR_AND_NOTIFY, LOG_CRITICAL_AND_NOTIFY
+from dca_investment_bot.binance_order import BinanceOrder
 
 '''
 Manages the fulfilled, unfufilled orders.

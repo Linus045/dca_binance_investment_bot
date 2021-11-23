@@ -1,5 +1,7 @@
 from decimal import Decimal
-from logger import LOG_DEBUG, LOG_ERROR_AND_NOTIFY, LOG_INFO, LOG_WARNING
+
+from dca_investment_bot.logger import LOG_DEBUG, LOG_ERROR_AND_NOTIFY, LOG_INFO, LOG_WARNING
+
 '''
 Validates if a given order is valid.
 Uses the symbol filters to determine if the order is valid.

@@ -2,8 +2,8 @@ import os
 import json
 from typing import Any
 
-from paths import Paths
-from logger import LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_WARNING, LOG_ERROR, LOG_CRITICAL
+from dca_investment_bot.paths import Paths
+from dca_investment_bot.logger import LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_WARNING, LOG_ERROR, LOG_CRITICAL
 
 '''
 Manages all the options stored in config.json.

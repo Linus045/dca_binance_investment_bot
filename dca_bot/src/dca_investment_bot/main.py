@@ -11,18 +11,18 @@ from decimal import getcontext
 from binance.enums import *
 from binance.enums import ORDER_TYPE_LIMIT
 from binance.exceptions import BinanceAPIException
-from config_manager import ConfigManager
-
-import global_vars
 from dotenv import load_dotenv
-from trading_bot import TradingBot
-from dca_investment_parameter import *
-from binance_order import BinanceOrder
-from logger import *
-from order_fulfilled_checker_thread import OrderFulfilledChecker
-from order_list_manager import OrderListManager
-from exceptions import KillProcessException
-from paths import Paths
+
+import dca_investment_bot.global_vars as global_vars
+from dca_investment_bot.config_manager import ConfigManager
+from dca_investment_bot.trading_bot import TradingBot
+from dca_investment_bot.dca_investment_parameter import *
+from dca_investment_bot.binance_order import BinanceOrder
+from dca_investment_bot.logger import log_and_raise_exeption, LOG_DEBUG, LOG_ERROR_AND_NOTIFY, LOG_INFO, LOG_WARNING, LOG_WARNING_AND_NOTIFY, LOG_CRITICAL, LOG_CRITICAL_AND_NOTIFY, init_logger
+from dca_investment_bot.order_fulfilled_checker_thread import OrderFulfilledChecker
+from dca_investment_bot.order_list_manager import OrderListManager
+from dca_investment_bot.exceptions import KillProcessException
+from dca_investment_bot.paths import Paths
 
 # set precision for Decimal to 8 since most numbers in binance use max 8 digits
 getcontext().prec = 8
@@ -97,8 +97,8 @@ def main():
     global_vars.sync_fulfilled_orders_to_firebase = config_manager.sync_fulfilled_orders_to_firebase
 
     if config_manager.use_firebase:
-        from firebase.firebase_storage import FirebaseStorage
-        from firebase.firebase_messager import FirebaseMessager
+        from dca_investment_bot.firebase.firebase_storage import FirebaseStorage
+        from dca_investment_bot.firebase.firebase_messager import FirebaseMessager
 
         LOG_INFO(debug_tag, 'Using Firebase')
         firebase_project_id = config_manager.firebase_project_id
