@@ -1,3 +1,5 @@
+![Tests](https://github.com/Linus045/dca_binance_investment_bot/actions/workflows/tests.yml/badge.svg)
+
 # dca_binance_investment_bot
 A bot that automatically invest using the DCA (Dollar Cost Averaging) strategy
 
