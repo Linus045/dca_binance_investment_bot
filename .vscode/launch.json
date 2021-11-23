@@ -8,7 +8,7 @@
             "name": "Start DCA Bot",
             "type": "python",
             "request": "launch",
-            "program": "src/dca_investment_bot/main.py",
+            "program": "main.py",
             "cwd": "${workspaceFolder}/dca_bot",
             "console": "integratedTerminal"
         }
