@@ -1,26 +1,27 @@
-import os
 import json
+import os
 
-from dca_investment_bot.logger import LOG_DEBUG, LOG_INFO, LOG_WARNING_AND_NOTIFY, LOG_ERROR_AND_NOTIFY, LOG_CRITICAL_AND_NOTIFY
 from dca_investment_bot.binance_order import BinanceOrder
+from dca_investment_bot.logger import LOG_INFO
 
-'''
+"""
 Manages the fulfilled, unfufilled orders.
 Reads them from a file, and writes them to a file.
-'''
+"""
+
+
 class OrderListManager:
-    
-    def __init__(self, order_filepath : str) -> None:
-        self._debug_tag = '[OrderListManager]'
-        self._unfulfilled_orders = []
-        self._fulfilled_orders = []
+    def __init__(self, order_filepath: str) -> None:
+        self._debug_tag = "[OrderListManager]"
+        self._unfulfilled_orders: list = []
+        self._fulfilled_orders: list = []
         self._order_filepath = order_filepath
         self.__create_path()
-            
+
     def load_fulfilled_from_file(self) -> None:
-        '''
+        """
         Loads the orders from the file.
-        '''
+        """
         if os.path.isfile(self._order_filepath):
             with open(self._order_filepath) as f:
                 json_orders = json.load(f)
@@ -29,10 +30,10 @@ class OrderListManager:
             self._fulfilled_orders = []
 
     def store_orders_to_file(self) -> None:
-        '''
+        """
         Stores the orders to the file.
-        '''
-        with open(self._order_filepath, 'w') as f:
+        """
+        with open(self._order_filepath, "w") as f:
             json_orders = [o.asDict() for o in self._fulfilled_orders]
             json.dump(json_orders, f, indent=4, ensure_ascii=False)
 
@@ -46,16 +47,16 @@ class OrderListManager:
     def fulfilled_orders(self) -> list:
         return self._fulfilled_orders
 
-    def add_new_order(self, new_order : BinanceOrder) -> None:
-        '''
+    def add_new_order(self, new_order: BinanceOrder) -> None:
+        """
         Adds a new order to the list of unfulfilled orders.
-        '''
+        """
         self._unfulfilled_orders.append(new_order)
 
-    def print_orders(self, orders : list) -> None:
-        '''
+    def print_orders(self, orders: list) -> None:
+        """
         Prints the orders.
-        '''
+        """
         if len(orders) > 0:
             LOG_INFO("------------------------------------------------")
             for order in orders:
