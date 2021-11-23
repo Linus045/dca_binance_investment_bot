@@ -168,15 +168,25 @@ Windows
         
         ...\dca_binance_investment_bot\dca_bot> python -m pip install -r requirements.txt
 
-### 5. Run the bot
+## 5. Install the source code as module
 Linux:
 
-        .../dca_binance_investment_bot/dca_bot $ python main.py
+        .../dca_binance_investment_bot/dca_bot $ python -m pip install -e .
+
+Windows
+        
+        ...\dca_binance_investment_bot\dca_bot> python -m pip install -e .
+
+This installs the source code as a module so dependencies can be referenced easier.
+
+### 6. Run the bot
+Linux:
+
+        .../dca_binance_investment_bot/dca_bot $ python .\src\dca_investment_bot\main.py
 
 Windows:
 
-        ...\dca_binance_investment_bot\dca_bot> python main.py
-
+        ...\dca_binance_investment_bot\dca_bot> python .\src\dca_investment_bot\main.py
 
 # How to connect the bot to Firebase (to receive messages via firebase cloud messaging and the investment_bot_notifier Android app)
 
