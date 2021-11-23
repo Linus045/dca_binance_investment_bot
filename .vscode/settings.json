@@ -1,5 +1,10 @@
 {
     "python.analysis.extraPaths": [
         "./dca_bot/src"
-    ]
+    ],
+    "python.testing.pytestArgs": [
+        "dca_bot"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
