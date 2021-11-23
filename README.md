@@ -213,3 +213,28 @@ The document name is your unique Android ID and the messaging token is your uniq
 You can install this app on multiple devices and they all will receive the same notifications from the bot.
 ### 8. (Re-)start the bot 
 You should now receive messages via firebase cloud messaging on your phone/emulator.
+
+
+
+
+# Run Tests locally
+## Tox
+Make sure you enabled the virtual environment.
+To run Tox, move into the dca_bot directory and run:
+
+        (env) ...\dca_binance_investment_bot\dca_bot> tox
+
+## PyTest
+Make sure you enabled the virtual environment.
+To run PyTest, move into the dca_bot directory and run:
+
+        (env) ...\dca_binance_investment_bot\dca_bot> pytest
+
+
+## Flake8
+Make sure you enabled the virtual environment.
+To run Flake8, move into the dca_bot directory and run:
+
+        (env) ...\dca_binance_investment_bot\dca_bot> flake8 src
+
+
