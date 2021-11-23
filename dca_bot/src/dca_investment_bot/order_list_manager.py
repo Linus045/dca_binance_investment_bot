@@ -40,7 +40,7 @@ class OrderListManager:
 
     def __create_path(self):
         if not os.path.exists(self._order_filepath):
-            os.makedirs(self._order_filepath)
+            os.makedirs(os.path.dirname(self._order_filepath), exist_ok=True)
 
     def unfulfilled_orders(self) -> typing.List[BinanceOrder]:
         return self._unfulfilled_orders

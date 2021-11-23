@@ -214,6 +214,14 @@ def main():
         while running:
             try:
                 LOG_INFO("----Checking if DCA investment is neccessary----")
+                if len(dca_investment_strategies) == 0:
+                    LOG_ERROR_AND_NOTIFY(
+                        debug_tag,
+                        "No DCA investment strategies found. \
+                        Please add strategies to the dca_investment_parameter.json file",
+                    )
+                    running = False
+                    continue
                 for investment_strategy in dca_investment_strategies:
                     """
                     A symbol is composed of a base asset and a quote asset.
