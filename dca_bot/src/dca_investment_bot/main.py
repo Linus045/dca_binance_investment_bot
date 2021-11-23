@@ -78,6 +78,9 @@ def main():
     order_list_manager = OrderListManager(Paths.order_filepath)
     order_list_manager.load_fulfilled_from_file()
 
+    # TODO: make this path configurable via arguments or environment variables
+    Paths.init_root_path(os.path.join(os.path.abspath(os.curdir)))
+
     order_fulfilled_checker_thread : OrderFulfilledChecker = OrderFulfilledChecker(order_list_manager,
         on_order_filled_callback=on_order_filled_callback, get_order_status_callback=get_order_status_callback)
 
