@@ -1,4 +1,5 @@
-![Tests](https://github.com/Linus045/dca_binance_investment_bot/actions/workflows/tests.yml/badge.svg)
+[![Tests](https://github.com/Linus045/dca_binance_investment_bot/actions/workflows/tests.yml/badge.svg)](https://github.com/Linus045/dca_binance_investment_bot/actions)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # dca_binance_investment_bot
 A bot that automatically invest using the DCA (Dollar Cost Averaging) strategy
