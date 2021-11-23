@@ -6,5 +6,12 @@
         "dca_bot"
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true,
+    "python.linting.flake8Args": [
+        "--max-line-length=120",
+        "--extend-ignore=E203"
+    ],
+    "python.linting.flake8Path": "./dca_bot/env/Scripts/flake8"
 }
