@@ -6,7 +6,7 @@ from logging.handlers import TimedRotatingFileHandler
 import dca_investment_bot.global_vars as global_vars
 from dca_investment_bot.paths import Paths
 
-logger: log.Logger = None
+logger: log.Logger = None  # type: ignore
 logger_initialized = False
 
 

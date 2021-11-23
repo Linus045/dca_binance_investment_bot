@@ -1,5 +1,6 @@
 import json
 import os
+import typing
 from typing import Any
 
 from dca_investment_bot.logger import LOG_CRITICAL
@@ -38,21 +39,21 @@ class ConfigManager:
 
     def __init__(self) -> None:
         self.debug_tag = "[ConfigManager]"
-        self.log_level: str = None
-        self.log_file: str = None
-        self.use_testnet: bool = None
-        self.check_interval: int = None
-        self.sync_fulfilled_orders_to_firebase: bool = None
-        self.use_firebase: bool = None
-        self.firebase_project_id: str = None
+        self.log_level: Any = None
+        self.log_file: Any = None
+        self.use_testnet: Any = None
+        self.check_interval: Any = None
+        self.sync_fulfilled_orders_to_firebase: Any = None
+        self.use_firebase: Any = None
+        self.firebase_project_id: Any = None
 
     def __validate_value(
         self,
-        data: dict,
+        data: typing.Dict,
         key: str,
         expected_type: type,
         default_value: Any,
-        valid_values: list = None,
+        valid_values: typing.List = None,
         valid_filepath: bool = False,
     ) -> Any:
         """
@@ -88,7 +89,7 @@ class ConfigManager:
             value = default_value
         return value
 
-    def get_value_or_default(self, data: dict, key: str, default_value: Any) -> Any:
+    def get_value_or_default(self, data: typing.Dict, key: str, default_value: Any) -> Any:
         """
         Returns the value for the given key in the config file.
         If the key is not found, the default value is returned.

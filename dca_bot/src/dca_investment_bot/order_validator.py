@@ -1,3 +1,4 @@
+import typing
 from decimal import Decimal
 
 from dca_investment_bot.logger import LOG_DEBUG
@@ -14,7 +15,7 @@ class OrderValidator:
 
     @staticmethod
     def check_order_possible(
-        symbol_info: dict,
+        symbol_info: typing.Dict,
         quote_balance: Decimal,
         symbol: str,
         amount: Decimal,
@@ -62,8 +63,13 @@ class OrderValidator:
         return True
 
     @staticmethod
-    def __price_is_in_filter(symbol_filter_info: dict, symbol: str, price: Decimal) -> bool:
-        price_filter = [f for f in symbol_filter_info if f["filterType"] == "PRICE_FILTER"][0]
+    def __price_is_in_filter(symbol_filter_info: typing.List, symbol: str, price: Decimal) -> bool:
+        price_filter: typing.Dict = None
+        for f in symbol_filter_info:
+            if "filterType" in f and f["filterType"] == "PRICE_FILTER":
+                price_filter = f
+                break
+
         if price_filter is None:
             LOG_ERROR_AND_NOTIFY(
                 OrderValidator.debug_tag,
@@ -111,8 +117,13 @@ class OrderValidator:
         return True
 
     @staticmethod
-    def __amount_is_in_filter(symbol_filter_info: dict, symbol: str, amount: Decimal, price: Decimal) -> bool:
-        lot_filter = [f for f in symbol_filter_info if f["filterType"] == "LOT_SIZE"][0]
+    def __amount_is_in_filter(symbol_filter_info: typing.List, symbol: str, amount: Decimal, price: Decimal) -> bool:
+        lot_filter: typing.Dict = None
+        for f in symbol_filter_info:
+            if "filterType" in f and f["filterType"] == "LOT_SIZE":
+                lot_filter = f
+                break
+
         if lot_filter is None:
             LOG_ERROR_AND_NOTIFY(
                 OrderValidator.debug_tag,
@@ -154,7 +165,13 @@ class OrderValidator:
                             amount, correct_amount, lot_step_size, symbol
                         ),
                     )
-            notion_filter = [f for f in symbol_filter_info if f["filterType"] == "MIN_NOTIONAL"][0]
+
+            notion_filter: typing.Dict = None
+            for f in symbol_filter_info:
+                if "filterType" in f and f["filterType"] == "MIN_NOTIONAL":
+                    notion_filter = f
+                    break
+
             if notion_filter is None:
                 LOG_ERROR_AND_NOTIFY(
                     OrderValidator.debug_tag,

@@ -1,5 +1,7 @@
 import datetime
+import typing
 from decimal import Decimal
+from typing import Any
 
 
 class BinanceOrder:
@@ -7,27 +9,27 @@ class BinanceOrder:
     Used to represent a Binance json order object
     """
 
-    def __init__(self, binance_order_object):
-        self.symbol = binance_order_object.get("symbol")  # "BTCUSDT",
-        self.orderId = binance_order_object.get("orderId")  # 28,
-        self.orderListId = binance_order_object.get("orderListId")  # -1, //Unless OCO, value will be -1
-        self.clientOrderId = binance_order_object.get("clientOrderId")  # "6gCrw2kRUAF9CvJDGP16IP",
-        self.transactTime = binance_order_object.get("transactTime")  # 1507725176595,
-        self.price = binance_order_object.get("price")  # "0.00000000",
-        self.origQty = binance_order_object.get("origQty")  # "10.00000000",
-        self.executedQty = binance_order_object.get("executedQty")  # "10.00000000",
-        self.cummulativeQuoteQty = binance_order_object.get("cummulativeQuoteQty")  # "10.00000000",
-        self.status = binance_order_object.get("status")  # "FILLED",
-        self.timeInForce = binance_order_object.get("timeInForce")  # "GTC",
-        self.type = binance_order_object.get("type")  # "MARKET",
-        self.side = binance_order_object.get("side")  # "SELL"
-        self.fills = binance_order_object.get("fills")
-        self.stopPrice = binance_order_object.get("stopPrice")  # "0.00000000",
-        self.icebergQty = binance_order_object.get("icebergQty")  # "0.00000000",
-        self.time = binance_order_object.get("time")  # 1636591592916,
-        self.updateTime = binance_order_object.get("updateTime")  # 1636591592916,
-        self.isWorking = binance_order_object.get("isWorking")  # true,
-        self.origQuoteOrderQty = binance_order_object.get("origQuoteOrderQty")  # "0.00000000"
+    def __init__(self, binance_order_object: typing.Dict):
+        self.symbol: Any = binance_order_object.get("symbol")  # "BTCUSDT",
+        self.orderId: Any = binance_order_object.get("orderId")  # 28,
+        self.orderListId: Any = binance_order_object.get("orderListId")  # -1, //Unless OCO, value will be -1
+        self.clientOrderId: Any = binance_order_object.get("clientOrderId")  # "6gCrw2kRUAF9CvJDGP16IP",
+        self.transactTime: Any = binance_order_object.get("transactTime")  # 1507725176595,
+        self.price: Any = binance_order_object.get("price")  # "0.00000000",
+        self.origQty: Any = binance_order_object.get("origQty")  # "10.00000000",
+        self.executedQty: Any = binance_order_object.get("executedQty")  # "10.00000000",
+        self.cummulativeQuoteQty: Any = binance_order_object.get("cummulativeQuoteQty")  # "10.00000000",
+        self.status: Any = binance_order_object.get("status")  # "FILLED",
+        self.timeInForce: Any = binance_order_object.get("timeInForce")  # "GTC",
+        self.type: Any = binance_order_object.get("type")  # "MARKET",
+        self.side: Any = binance_order_object.get("side")  # "SELL"
+        self.fills: Any = binance_order_object.get("fills")
+        self.stopPrice: Any = binance_order_object.get("stopPrice")  # "0.00000000",
+        self.icebergQty: Any = binance_order_object.get("icebergQty")  # "0.00000000",
+        self.time: Any = binance_order_object.get("time")  # 1636591592916,
+        self.updateTime: Any = binance_order_object.get("updateTime")  # 1636591592916,
+        self.isWorking: Any = binance_order_object.get("isWorking")  # true,
+        self.origQuoteOrderQty: Any = binance_order_object.get("origQuoteOrderQty")  # "0.00000000"
 
     # TODO: Check if this is a correct override of the hash method
     def __hash__(self):
@@ -56,11 +58,11 @@ class BinanceOrder:
             )
         )
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, BinanceOrder):
             return NotImplemented
         return (
-            (self.symbol == other.symbol)
+            self.symbol == other.symbol
             and (self.orderId == other.orderId)
             and (self.orderListId == other.orderListId)
             and (self.clientOrderId == other.clientOrderId)
@@ -91,14 +93,17 @@ class BinanceOrder:
         order_type = self.type
         side = self.side
         symbol = self.symbol
-        price = self.price
-        quantity = self.origQty
-        date = self.time
-        price = Decimal(price)
-        quantity = Decimal(quantity)
+        price = Decimal(-1)
+        if self.price is not None:
+            price = Decimal(self.price)
+
+        quantity = Decimal(-1)
+        if self.origQty is not None:
+            quantity = Decimal(self.origQty)
+
         date = self.time
         if date is not None:
-            date = datetime.datetime.fromtimestamp(date / 1000).strftime("%Y-%m-%d %H:%M:%S")
+            date = datetime.datetime.fromtimestamp(float(date) / 1000).strftime("%Y-%m-%d %H:%M:%S")
         else:
             date = "N/A"
         return f"| {order_type}-Order | {order_id} | {date} | {status} | {side} | {symbol} \

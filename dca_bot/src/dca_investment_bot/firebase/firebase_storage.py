@@ -1,4 +1,5 @@
 import datetime
+import typing
 
 import firebase_admin
 from firebase_admin import credentials
@@ -41,9 +42,9 @@ class FirebaseStorage:
     def get_id(self, android_id: str) -> str:
         self.__check_connection()
         doc_ref = self.db.collection(COLLECTION_NOTIFICATION_IDS).document(android_id)
-        return doc_ref.get().to_dict()
+        return str(doc_ref.get().to_dict()["messaging_token"])
 
-    def get_all_ids(self) -> list:
+    def get_all_ids(self) -> typing.List:
         self.__check_connection()
         users = self.db.collection(COLLECTION_NOTIFICATION_IDS).stream()
         ids = []
@@ -51,20 +52,14 @@ class FirebaseStorage:
             ids.append(user.to_dict()["messaging_token"])
         return ids
 
-    def set_fulfilled_orders(self, orders: list):
+    def set_fulfilled_orders(self, orders: typing.List) -> None:
         self.__check_connection()
 
         if not global_vars.sync_fulfilled_orders_to_firebase:
-            LOG_DEBUG(
-                "Not syncing fulfilled orders to firebase: \
-                SYNC_FULFILLED_ORDERS_TO_FIREBASE is False"
-            )
+            LOG_DEBUG("Not syncing fulfilled orders to firebase: SYNC_FULFILLED_ORDERS_TO_FIREBASE is False")
             return
 
-        LOG_DEBUG(
-            "Syncing fulfilled orders to firebase: \
-            SYNC_FULFILLED_ORDERS_TO_FIREBASE is True"
-        )
+        LOG_DEBUG("Syncing fulfilled orders to firebase: SYNC_FULFILLED_ORDERS_TO_FIREBASE is True")
         fulfilled_orders = self.db.collection(COLLECTION_FULFILLED_ORDERS)
         for order in orders:
             fulfilled_orders.document(str(order.orderId)).set(
