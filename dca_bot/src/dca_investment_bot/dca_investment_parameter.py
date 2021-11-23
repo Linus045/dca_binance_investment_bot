@@ -53,13 +53,13 @@ class DCAInvestmentParameter:
         try:
             timedeltaObj = datetime.datetime.strptime(investment_time, "%H:%M") - datetime.datetime(1900,1,1)
             return int(timedeltaObj.total_seconds())
-        except OverflowError:
+        except (OverflowError, ValueError):
             raise InvalidParameterFormat('Investment time uses invalid format. HH:MM expected but {} was given'.format(investment_time))
 
     def date_to_seconds(self, date):
         try:
             return time.mktime(datetime.datetime.strptime(date, "%Y-%m-%d").timetuple())
-        except OverflowError:
+        except (OverflowError, ValueError, TypeError):
             raise InvalidParameterFormat('Start date uses invalid format. YYYY-MM-DD expected but {} was given'.format(date))
 
     # method to print details
