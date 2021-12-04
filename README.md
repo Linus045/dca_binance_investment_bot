@@ -1,16 +1,26 @@
 [![Tests](https://github.com/Linus045/dca_binance_investment_bot/actions/workflows/tests.yml/badge.svg)](https://github.com/Linus045/dca_binance_investment_bot/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-# dca_binance_investment_bot
+# Description
 A bot that automatically invest using the DCA (Dollar Cost Averaging) strategy
 
 'dca_bot' contains the relevant code for the bot.<br>
 'investment_bot_notifier' contains the code for the Android App to receive the notifications (and later manage the bot).<br>
 'utility_scripts' contains small scripts e.g. to use for a raspberry pi.
 
+# Table of contents
+
+- [Description](#description)
+- [Table of contents](#table-of-contents)
+- [Steps to configure the bot](#steps-to-configure-the-bot)
+- [How to install and run the bot](#how-to-install-and-run-the-bot)
+- [How to connect the bot to Firebase](#how-to-connect-the-bot-to-firebase)
+- [Run Tests locally](#run-tests-locally)
+
 # Steps to configure the bot
-## Edit config files in dca_bot/configs
-1. (.env) Change .env.example to .env and fill in the API key and secret for the binance API
+Edit config files in dca_bot/configs
+## 1. .env File
+(.env) Change .env.example to .env and fill in the API key and secret for the binance API
         
         configs/.env
 
@@ -21,7 +31,8 @@ A bot that automatically invest using the DCA (Dollar Cost Averaging) strategy
 
 Get Binance Testnet API keys from: https://testnet.binance.vision/ 
 
-2. (dca_investment_parameter.json) Define the symbols you want to invest in
+## 2. DCA Investment Parameters
+(dca_investment_parameter.json) Define the symbols you want to invest in
 
 ```JSON
         [
@@ -52,7 +63,7 @@ Get Binance Testnet API keys from: https://testnet.binance.vision/
         ]
 ```
 
-3. 
+## 3. Logging Config
 Change log options inside config.json to fit your needs. 
 A new log file will be created every time at midnight (00:00) and save the old by appending the last timestamp (format: %Y-%m-%d) to it's filename.
 e.g. bot.log -> bot.log.2021.11.18
@@ -73,9 +84,9 @@ e.g. bot.log -> bot.log.2021.11.18
 
 
 # How to install and run the bot
-### 1. Install Python Version 3 (I'm using 3.9.7 but ealier versions should work as well)
 
-### 2. Navigate to the dca_bot directory
+## 1. Install Python Version 3
+## 2. Navigate to the dca_bot directory
 Linux:
 
         .../dca_binance_investment_bot $ cd dca_bot
@@ -84,7 +95,7 @@ Windows:
 
         ...\dca_binance_investment_bot> cd dca_bot
 
-### 3. (Recommended) Install a virtual environment for the python modules 
+## 3. (Recommended) Install a virtual environment for the python modules 
 
 Linux:
 
@@ -96,7 +107,7 @@ Windows:
         
 (venv should be included with python 3.5+ for more info see: https://docs.python.org/3/library/venv.html)
 
-### 3.1 Activate the virtual environment (Only necessary if step 3 was done)
+## 3.1 Activate the virtual environment (Only necessary if step 3 was done)
 
 Linux:
 
@@ -159,7 +170,7 @@ Windows
 <br />
 <br />
 
-### 4. Install the dependencies
+## 4. Install the dependencies
 To install the requirements use:
 
 Linux:
@@ -181,7 +192,7 @@ Windows
 
 This installs the source code as a module so dependencies can be referenced easier.
 
-### 6. Run the bot
+## 6. Run the bot
 Linux:
 
         .../dca_binance_investment_bot/dca_bot $ python main.py
@@ -190,34 +201,35 @@ Windows:
 
         ...\dca_binance_investment_bot\dca_bot> python main.py
 
-# How to connect the bot to Firebase (to receive messages via firebase cloud messaging and the investment_bot_notifier Android app)
+# How to connect the bot to Firebase 
+To receive messages via firebase cloud messaging and the investment_bot_notifier Android app
 
-### 1. Create a firebase project
+## 1. Create a firebase project
 Go to https://console.firebase.google.com/ and create a new project.
 
-### 2. Copy the server key from the firebase project settings > cloud messaging > server key
+## 2. Copy the server key from the firebase project settings > cloud messaging > server key
 See https://console.firebase.google.com/project/< YOUR-PROJECT-ID >/settings/cloudmessaging
 
 This is needed to send messages to the user via firebase cloud messaging.
-### 3. Copy the Firebase Admin SDK key from the firebase project settings > Service Accounts > Firebase Admin SDK
+## 3. Copy the Firebase Admin SDK key from the firebase project settings > Service Accounts > Firebase Admin SDK
 See https://console.firebase.google.com/project/< YOUR-PROJECT-ID >/settings/serviceaccounts/adminsdk
 
 Click "Create new private key" and store the json file somewhere secure.
 This is neccessary so the bot can store and load data from the firestore database (like device tokens and fulfilled orders).
 
-### 4. Add the values to your enviorment variables (see .env.example)
+## 4. Add the values to your enviorment variables (see .env.example)
 Open the .env file and add the Cloud Messaging Server key and Firebase Admin SDK key.
 Also don't forget to activate the Firebase options in the config.json file.
 
-### 5. Create an Android app
+## 5. Create an Android app
 Go to https://console.firebase.google.com/project/< YOUR-PROJECT-Id >/overview and create a new app.
 
 Download the google-service.json file and place it in the root/investment_bot_notifier/app directory.
 
-### 6. Open Android Studio and build the app
+## 6. Open Android Studio and build the app
 Open the app directory in Android Studio and build the app.
 
-### 7. Run the app
+## 7. Run the app
 Running the app on your phone/emulator is neccessary to receive messages via firebase cloud messaging.
 Upon starting the app, you should see a toast notification (little popup at the bottom) on your phone/emulator which notifies you that your app token has been send to the firebase server (might need start the app twice in case the token hasn't been generated yet).
 
@@ -226,7 +238,7 @@ https://console.firebase.google.com/project/< YOUR-PROJECT-ID >/firestore/data
 
 The document name is your unique Android ID and the messaging token is your unique Firebase token. (Usally does not change unless you reinstall the app/clear app data)
 You can install this app on multiple devices and they all will receive the same notifications from the bot.
-### 8. (Re-)start the bot 
+## 8. (Re-)start the bot 
 You should now receive messages via firebase cloud messaging on your phone/emulator.
 
 
