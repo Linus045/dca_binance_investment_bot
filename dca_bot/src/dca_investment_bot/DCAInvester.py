@@ -8,7 +8,6 @@ from typing import Union
 
 from binance.enums import SIDE_BUY
 from binance.exceptions import BinanceAPIException
-from dotenv import load_dotenv
 from requests.exceptions import ConnectionError
 from requests.exceptions import ReadTimeout
 
@@ -17,7 +16,6 @@ from dca_investment_bot.binance_order import BinanceOrder
 from dca_investment_bot.config_manager import ConfigManager
 from dca_investment_bot.dca_investment_parameter import DCAInvestmentParameter
 from dca_investment_bot.exceptions import KillProcessException
-from dca_investment_bot.logger import init_logger
 from dca_investment_bot.logger import log_and_raise_exeption
 from dca_investment_bot.logger import LOG_CRITICAL_AND_NOTIFY
 from dca_investment_bot.logger import LOG_DEBUG
@@ -36,10 +34,10 @@ def signal_handler(signal, frame):
 
 
 class DCAInvester:
-    def __init__(self) -> None:
+    def __init__(self, config_manager: ConfigManager) -> None:
         self.bot: TradingBot = None
         self.order_list_manager: OrderListManager = None
-        self.config_manager: ConfigManager = ConfigManager()
+        self.config_manager: ConfigManager = config_manager
 
     def run(self):
         # set precision for Decimal to 8 since most numbers in binance use max 8 digits
@@ -50,26 +48,11 @@ class DCAInvester:
         self.order_list_manager = OrderListManager(Paths.order_filepath)
         self.order_list_manager.load_fulfilled_from_file()
 
-        # TODO: make this path configurable via arguments or environment variables
-        Paths.init_root_path(os.path.join(os.path.abspath(os.curdir)))
-
         order_fulfilled_checker_thread: OrderFulfilledChecker = OrderFulfilledChecker(
             self.order_list_manager,
             on_order_filled_callback=self.on_order_filled_callback,
             get_order_status_callback=self.get_order_status_callback,
         )
-
-        self.config_manager.load_and_validate_config()
-        init_logger(self.config_manager.log_level, self.config_manager.log_file)
-        LOG_INFO(debug_tag, "Logger initialized")
-        LOG_INFO(debug_tag, "Config file loaded")
-
-        # load environment variables
-        dotEnvPath = os.path.join(Paths.config_directory, ".env")
-        if os.path.exists(dotEnvPath):
-            load_dotenv(dotEnvPath)
-        else:
-            LOG_WARNING_AND_NOTIFY(debug_tag, "No .env file found at {}", dotEnvPath)
 
         ids = []
         global_vars.sync_fulfilled_orders_to_firebase = self.config_manager.sync_fulfilled_orders_to_firebase
