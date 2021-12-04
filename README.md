@@ -5,8 +5,8 @@
 A bot that automatically invest using the DCA (Dollar Cost Averaging) strategy
 
 dca_bot contains the relevant code for the bot.
-timesync contains the code for the time synchronization (Currently not integrated).
-
+investment_bot_notifier contains the code for the Android App to receive the notifications (and later manage the bot).
+utility_scripts contains small scripts e.g. to use for a raspberry pi.
 
 # Steps to configure the bot
 ## Edit config files in dca_bot/configs
