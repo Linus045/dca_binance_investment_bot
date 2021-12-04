@@ -4,9 +4,9 @@
 # dca_binance_investment_bot
 A bot that automatically invest using the DCA (Dollar Cost Averaging) strategy
 
-dca_bot contains the relevant code for the bot.
-investment_bot_notifier contains the code for the Android App to receive the notifications (and later manage the bot).
-utility_scripts contains small scripts e.g. to use for a raspberry pi.
+'dca_bot' contains the relevant code for the bot.<br>
+'investment_bot_notifier' contains the code for the Android App to receive the notifications (and later manage the bot).<br>
+'utility_scripts' contains small scripts e.g. to use for a raspberry pi.
 
 # Steps to configure the bot
 ## Edit config files in dca_bot/configs
@@ -23,6 +23,7 @@ Get Binance Testnet API keys from: https://testnet.binance.vision/
 
 2. (dca_investment_parameter.json) Define the symbols you want to invest in
 
+```JSON
         [
         {
             // symbol to invest in
@@ -49,13 +50,14 @@ Get Binance Testnet API keys from: https://testnet.binance.vision/
             "start_date": "2021-11-01"
         }
         ]
-
+```
 
 3. 
 Change log options inside config.json to fit your needs. 
 A new log file will be created every time at midnight (00:00) and save the old by appending the last timestamp (format: %Y-%m-%d) to it's filename.
 e.g. bot.log -> bot.log.2021.11.18
 
+```JSON
         {
             "LOGGING" : {
                 "LOG_LEVEL" : "DEBUG", // CRITICAL, ERROR, WARNING, INFO, DEBUG
@@ -67,7 +69,7 @@ e.g. bot.log -> bot.log.2021.11.18
             "FIREBASE_PROJECT_ID" : "investment-bot-notifier" // the project id of the firebase project (only needed if USE_FIREBASE : true)
             "SYNC_FULFILLED_ORDERS_TO_FIREBASE" : false, // whether to sync fulfilled orders to firebase or not (only needed if USE_FIREBASE : true)
         }
-
+```
 
 
 # How to install and run the bot
