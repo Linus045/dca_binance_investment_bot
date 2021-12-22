@@ -1,10 +1,13 @@
-import 'dart:convert';
-import 'dart:math';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:device_info/device_info.dart';
 
 const String keyFulfilledOrders = "fulfilled_orders";
 const String keyOrderTitle = "title";
@@ -45,6 +48,42 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _firebaseMessaging.getToken().then((token) async {
+      if (token == null) return;
+
+      final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
+      String identifier = "";
+      try {
+        if (Platform.isAndroid) {
+          var build = await deviceInfoPlugin.androidInfo;
+          identifier = build.androidId; //UUID for Android
+        } else if (Platform.isIOS) {
+          var data = await deviceInfoPlugin.iosInfo;
+          identifier = data.identifierForVendor; //UUID for iOS
+        }
+      } on PlatformException {
+        if (kDebugMode) {
+          print('Failed to get platform version');
+        }
+      }
+
+      if (kDebugMode) {
+        print('MESSAGING TOKEN IS: ' + token);
+      }
+
+      FirebaseFirestore.instance
+          .collection("notification_ids")
+          .doc(identifier)
+          .set({"messaging_token": token});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
