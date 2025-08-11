@@ -8,6 +8,11 @@ A bot that automatically invest using the DCA (Dollar Cost Averaging) strategy
 'investment_bot_notifier' contains the code for the Android App to receive the notifications (and later manage the bot).<br>
 'utility_scripts' contains small scripts e.g. to use for a raspberry pi.
 
+# Simple Notification App
+
+A simple app lists the notifications of fulfilled orders with details of the transaction (date, price, quantity, etc.):
+<img width="225" height="476" alt="image" src="https://github.com/user-attachments/assets/15e0e98f-7712-4db0-b467-1846c65edeb8" />
+
 # Table of contents
 
 - [Description](#description)
